@@ -1,0 +1,8 @@
+# Ignore everything
+*
+# But not these files/folders:
+!*.py
+!.gitignore
+!requirements.txt
+!README.md
+!climate_station_list.csv
