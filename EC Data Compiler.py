@@ -117,22 +117,6 @@ def auto_drop_redundant_columns(df, date_col):
                 df = df.drop(columns=[col])
     return df
 
-# --- Hard-coded columns for processing ---
-DATE_COL_ORIG = "DateTime"
-KEEP_COLS_ORIG = [
-    "DateTime",
-    "Max Temp (°C)",
-    "Min Temp (°C)",
-    "Mean Temp (°C)",
-    "Heat Deg Days (°C)",
-    "Cool Deg Days (°C)",
-    "Total Rain (mm)",
-    "Total Snow (cm)",
-    "Total Precip (mm)",
-    "Snow on Grnd (cm)",
-    "Spd of Max Gust (km/h)"
-]
-
 # --- Cleaned column names (after diacritics removal) ---
 DATE_COL_CLEAN = "datetime"
 KEEP_COLS_CLEAN = [
@@ -144,7 +128,6 @@ KEEP_COLS_CLEAN = [
     "cool deg days c",
     "total rain mm",
     "total snow cm",
-    "total precip mm",
     "snow on grnd cm",
     "spd of max gust kmh"
 ]
