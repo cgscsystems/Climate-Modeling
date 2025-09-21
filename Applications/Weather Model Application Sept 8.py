@@ -210,7 +210,8 @@ def render_controls(contents):
             id='threshold-mode-dropdown',
             options=[
                 {'label': 'Black Plane', 'value': 'black'},
-                {'label': 'Days Above Threshold', 'value': 'heatmap'}
+                {'label': 'Days Above Threshold', 'value': 'heatmap_above'},
+                {'label': 'Days Below Threshold', 'value': 'heatmap_below'}
             ],
             value='black',
             clearable=False,
@@ -555,7 +556,7 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
     if plane_toggle == 'show':
         z_plane = np.full_like(z, fill_value=threshold_value, dtype=float)
         
-        if threshold_mode == 'heatmap':
+        if threshold_mode == 'heatmap_above':
             # Bin the number of instances above the threshold for each year (x-axis)
             # z shape: (len(y), len(x)), where x = years, y = day_of_year
             # For each year (column), count number of days above threshold
@@ -579,9 +580,38 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
                     colorbar=dict(title='Days Above Threshold (per Year)', x=1.13),
                     showscale=True,
                     opacity=1.0,
-                    name='Threshold Bands',
+                    name='Threshold Bands Above',
                     customdata=customdata_plane,
                     hovertemplate='<b>Year:</b> %{customdata[0]}<br><b>Day of Year:</b> %{customdata[1]}<br><b>Days Above Threshold:</b> %{customdata[2]}<extra></extra>'
+                )
+            )
+        elif threshold_mode == 'heatmap_below':
+            # Bin the number of instances below the threshold for each year (x-axis)
+            # z shape: (len(y), len(x)), where x = years, y = day_of_year
+            # For each year (column), count number of days below threshold
+            band_counts = (z < threshold_value).sum(axis=0)  # shape: (len(x),)
+            # Repeat band_counts for each y to make a 2D array for surfacecolor
+            band_matrix = np.tile(band_counts, (len(y), 1))
+            # Prepare customdata for tooltips: year, day, count
+            year_labels = np.array(x)
+            day_labels = np.array(y)
+            customdata_plane = np.empty((len(y), len(x)), dtype=object)
+            for i in range(len(y)):
+                for j in range(len(x)):
+                    customdata_plane[i, j] = [year_labels[j], day_labels[i], band_matrix[i, j]]
+            fig.add_trace(
+                go.Surface(
+                    x=x,
+                    y=y,
+                    z=z_plane,
+                    surfacecolor=band_matrix,
+                    colorscale=color_palette,
+                    colorbar=dict(title='Days Below Threshold (per Year)', x=1.13),
+                    showscale=True,
+                    opacity=1.0,
+                    name='Threshold Bands Below',
+                    customdata=customdata_plane,
+                    hovertemplate='<b>Year:</b> %{customdata[0]}<br><b>Day of Year:</b> %{customdata[1]}<br><b>Days Below Threshold:</b> %{customdata[2]}<extra></extra>'
                 )
             )
         else:  # threshold_mode == 'black'
