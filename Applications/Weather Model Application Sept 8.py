@@ -55,35 +55,95 @@ except Exception as _e:
 # ---- Dash App ----
 app = Dash(__name__)
 
+# Add external stylesheets for better dropdown styling
+app.index_string = '''
+<!DOCTYPE html>
+<html>
+    <head>
+        {%metas%}
+        <title>{%title%}</title>
+        {%favicon%}
+        {%css%}
+        <style>
+            /* Dark mode dropdown styling */
+            .dark-mode .Select-control {
+                background-color: #3c3c3c !important;
+                border: 1px solid #555 !important;
+                color: #ffffff !important;
+            }
+            .dark-mode .Select-input > input {
+                color: #ffffff !important;
+            }
+            .dark-mode .Select-placeholder {
+                color: #cccccc !important;
+            }
+            .dark-mode .Select-value-label {
+                color: #ffffff !important;
+            }
+            .dark-mode .Select-menu-outer {
+                background-color: #3c3c3c !important;
+                border: 1px solid #555 !important;
+            }
+            .dark-mode .Select-option {
+                background-color: #3c3c3c !important;
+                color: #ffffff !important;
+            }
+            .dark-mode .Select-option:hover {
+                background-color: #4a4a4a !important;
+                color: #ffffff !important;
+            }
+            .dark-mode .Select-option.is-selected {
+                background-color: #5a5a5a !important;
+                color: #ffffff !important;
+            }
+            .dark-mode .Select-option.is-focused {
+                background-color: #4a4a4a !important;
+                color: #ffffff !important;
+            }
+        </style>
+    </head>
+    <body>
+        {%app_entry%}
+        <footer>
+            {%config%}
+            {%scripts%}
+            {%renderer%}
+        </footer>
+    </body>
+</html>
+'''
+
 app.layout = html.Div([
-    html.H1("Climate Visualization Tool", style={'margin': '0 0 10px 0', 'fontSize': 24}),
-    dcc.Store(id='plot-data-store'),
-    html.Div([
+    html.Div(id='main-container', children=[
+        html.H1("Climate Visualization Tool", style={'margin': '0 0 10px 0', 'fontSize': 24}),
+        dcc.Store(id='plot-data-store'),
         html.Div([
-            dcc.Upload(
-                id='upload-data',
-                children=html.Button('Upload Weather CSV', style={'width': '100%', 'fontSize': 12, 'padding': '4px'}),
-                multiple=False,
-                style={'marginBottom': '8px'}
-            ),
-            html.Div(id='upload-error', style={'color': 'red', 'fontSize': 12, 'marginBottom': '8px'}),
-            html.Div(id='controls-container'),
-        ], style={
-            'width': '220px',
-            'minWidth': '180px',
-            'maxWidth': '260px',
-            'padding': '8px',
-            'background': '#f8f8f8',
-            'borderRight': '1px solid #ddd',
-            'height': '85vh',
-            'overflowY': 'auto',
-            'display': 'inline-block',
-            'verticalAlign': 'top'
-        }),
-        html.Div([
-            dcc.Graph(id='value-3d-graph', style={'height': '85vh', 'width': '100%'})
-        ], style={'marginLeft': '10px', 'display': 'inline-block', 'width': 'calc(100% - 240px)', 'verticalAlign': 'top'})
-    ], style={'display': 'flex', 'flexDirection': 'row'})
+            html.Div(id='sidebar-container', children=[
+                dcc.Upload(
+                    id='upload-data',
+                    children=html.Button('Upload Weather CSV', id='upload-button', style={'width': '100%', 'fontSize': 12, 'padding': '4px'}),
+                    multiple=False,
+                    style={'marginBottom': '8px'}
+                ),
+                html.Div(id='upload-error', style={'color': 'red', 'fontSize': 12, 'marginBottom': '8px'}),
+                html.Div(id='controls-container'),
+            ], style={
+                'width': '220px',
+                'minWidth': '180px',
+                'maxWidth': '260px',
+                'padding': '8px',
+                'background': '#f8f8f8',
+                'borderRight': '1px solid #ddd',
+                'height': '85vh',
+                'overflowY': 'auto',
+                'display': 'inline-block',
+                'verticalAlign': 'top'
+            }),
+            html.Div([
+                dcc.Graph(id='value-3d-graph', style={'height': '85vh', 'width': '100%'})
+            ], style={'marginLeft': '10px', 'display': 'inline-block', 'width': 'calc(100% - 240px)', 'verticalAlign': 'top'})
+        ], style={'display': 'flex', 'flexDirection': 'row'})
+    ])
 ], style={'height': '100vh', 'margin': 0, 'padding': 0, 'fontFamily': 'Segoe UI, Arial, sans-serif'})
 
 # ---- Helper: Parse Uploaded CSV ----
@@ -126,11 +186,24 @@ def render_controls(contents):
     if plot_data is None or plot_data.empty:
         return None, "No valid data found in file.", None
     return html.Div([
+        html.Label("Dark Mode:"),
+        dcc.RadioItems(
+            id='dark-mode-toggle',
+            options=[
+                {'label': 'Light', 'value': 'light'},
+                {'label': 'Dark', 'value': 'dark'}
+            ],
+            value='light',
+            labelStyle={'display': 'inline-block', 'marginRight': '10px'},
+            style={'marginBottom': '8px'}
+        ),
+
         html.Label("Select Variable:"),
         dcc.Dropdown(
             id='variable-dropdown',
             options=[{'label': var, 'value': var} for var in sorted(plot_data['variable'].unique())],
-            value=plot_data['variable'].unique()[0]
+            value=plot_data['variable'].unique()[0],
+            style={'marginBottom': '8px'}
         ),
 
         html.Label("Plot Style:"),
@@ -371,6 +444,124 @@ def update_slider(variable, plot_data_json):
         marks={0: '0%', 50: '50%', 100: '100%'},
         tooltip={'placement': 'bottom', 'always_visible': False}
     )
+
+@app.callback(
+    Output('main-container', 'style'),
+    Output('main-container', 'className'),
+    Output('sidebar-container', 'style'),
+    Output('value-3d-graph', 'style'),
+    Input('dark-mode-toggle', 'value')
+)
+def update_dark_mode_styling(dark_mode):
+    if dark_mode == 'dark':
+        # Dark mode styles
+        main_style = {
+            'background': '#1e1e1e',
+            'color': '#ffffff',
+            'minHeight': '100vh'
+        }
+        main_class = 'dark-mode'
+        
+        sidebar_style = {
+            'width': '220px',
+            'minWidth': '180px',
+            'maxWidth': '260px',
+            'padding': '8px',
+            'background': '#2d2d30',
+            'borderRight': '1px solid #555',
+            'height': '85vh',
+            'overflowY': 'auto',
+            'display': 'inline-block',
+            'verticalAlign': 'top',
+            'color': '#ffffff'
+        }
+        
+        graph_style = {
+            'height': '85vh',
+            'width': '100%',
+            'background': '#1e1e1e'
+        }
+    else:
+        # Light mode styles (original)
+        main_style = {
+            'background': '#ffffff',
+            'color': '#000000',
+            'minHeight': '100vh'
+        }
+        main_class = ''
+        
+        sidebar_style = {
+            'width': '220px',
+            'minWidth': '180px',
+            'maxWidth': '260px',
+            'padding': '8px',
+            'background': '#f8f8f8',
+            'borderRight': '1px solid #ddd',
+            'height': '85vh',
+            'overflowY': 'auto',
+            'display': 'inline-block',
+            'verticalAlign': 'top'
+        }
+        
+        graph_style = {
+            'height': '85vh', 
+            'width': '100%'
+        }
+    
+    return main_style, main_class, sidebar_style, graph_style
+
+@app.callback(
+    [Output(f'{component_id}', 'style') for component_id in [
+        'variable-dropdown', 'plot-style-dropdown', 'color-palette-dropdown', 
+        'threshold-mode-dropdown', 'start-month-dropdown', 'outlier-method-dropdown'
+    ]],
+    [Output(f'{component_id}', 'style') for component_id in [
+        'x-aspect-input', 'y-aspect-input', 'z-aspect-input', 'outlier-count-input'
+    ]],
+    Output('upload-button', 'style'),
+    Input('dark-mode-toggle', 'value')
+)
+def update_control_styling(dark_mode):
+    if dark_mode == 'dark':
+        # Dark mode dropdown style - improved for better text contrast
+        dropdown_style = {
+            'marginBottom': '8px'
+        }
+        
+        # Dark mode input style
+        input_style = {
+            'backgroundColor': '#3c3c3c',
+            'color': '#ffffff',
+            'border': '1px solid #555',
+            'borderRadius': '4px'
+        }
+        
+        # Dark mode button style
+        button_style = {
+            'width': '100%',
+            'fontSize': 12,
+            'padding': '4px',
+            'backgroundColor': '#3c3c3c',
+            'color': '#ffffff',
+            'border': '1px solid #555',
+            'borderRadius': '4px'
+        }
+    else:
+        # Light mode styles
+        dropdown_style = {'marginBottom': '8px'}
+        input_style = {}
+        button_style = {
+            'width': '100%',
+            'fontSize': 12,
+            'padding': '4px'
+        }
+    
+    # Return styles for dropdowns first, then inputs, then button
+    dropdown_styles = [dropdown_style] * 6  # 6 dropdowns
+    input_styles = [input_style] * 4  # 4 inputs
+    
+    return dropdown_styles + input_styles + [button_style]
+
 @app.callback(
     Output('value-3d-graph', 'figure'),
     Input('variable-dropdown', 'value'),
@@ -391,11 +582,12 @@ def update_slider(variable, plot_data_json):
     Input('outlier-count-input', 'value'),
     Input('outlier-method-dropdown', 'value'),
     Input('plot-data-store', 'data'),
+    Input('dark-mode-toggle', 'value'),
     State('value-3d-graph', 'relayoutData')
 )
 def update_graph(selected_variable, start_month, display_mode, surface_mode, threshold_z, plane_toggle,
                  threshold_mode, x_aspect, y_aspect, z_aspect, color_palette, plot_style, enso_toggle, enso_opacity, year_range,
-                 outlier_count, outlier_method, plot_data_json, relayout_data):
+                 outlier_count, outlier_method, plot_data_json, dark_mode, relayout_data):
     if plot_data_json is None:
         return go.Figure()
     # Avoid unnecessary DataFrame copies
@@ -795,28 +987,68 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
         x_tick_vals = list(range(int(min(x)), int(max(x)) + 1, 10))
         x_tick_text = [str(year) for year in x_tick_vals]
 
+    # Configure scene styling based on dark mode
+    if dark_mode == 'dark':
+        # Dark mode scene colors
+        scene_bgcolor = '#1e1e1e'
+        axis_color = '#ffffff'
+        gridline_color = '#555555'
+        axis_bgcolor = '#2d2d30'
+    else:
+        # Light mode scene colors (default)
+        scene_bgcolor = 'white'
+        axis_color = '#000000'
+        gridline_color = '#cccccc'
+        axis_bgcolor = 'rgba(240,240,240,0.8)'
+
     scene_config = dict(
+        bgcolor=scene_bgcolor,
         xaxis=dict(
             tickmode='array',
             tickvals=x_tick_vals,
-            ticktext=x_tick_text
+            ticktext=x_tick_text,
+            color=axis_color,
+            gridcolor=gridline_color,
+            backgroundcolor=axis_bgcolor,
+            showbackground=True
         ),
         yaxis=dict(
             tickmode='array',
             tickvals=month_days,
-            ticktext=month_labels
+            ticktext=month_labels,
+            color=axis_color,
+            gridcolor=gridline_color,
+            backgroundcolor=axis_bgcolor,
+            showbackground=True
         ),
         zaxis=dict(
+            color=axis_color,
+            gridcolor=gridline_color,
+            backgroundcolor=axis_bgcolor,
+            showbackground=True
         ),
         aspectratio=dict(x=x_aspect, y=y_aspect, z=z_aspect)
     )
     if camera:
         scene_config['camera'] = camera
 
+    # Configure dark/light mode plot styling
+    if dark_mode == 'dark':
+        plot_bgcolor = '#1e1e1e'
+        paper_bgcolor = '#1e1e1e'
+        font_color = '#ffffff'
+    else:
+        plot_bgcolor = 'white'
+        paper_bgcolor = 'white'
+        font_color = '#000000'
+
     fig.update_layout(
         scene=scene_config,
         margin=dict(l=0, r=0, b=0, t=40),
-        title=f"{'Δ from Avg' if display_mode == 'anomaly' else 'Raw'} {selected_variable} by Day of Year"
+        title=f"{'Δ from Avg' if display_mode == 'anomaly' else 'Raw'} {selected_variable} by Day of Year",
+        plot_bgcolor=plot_bgcolor,
+        paper_bgcolor=paper_bgcolor,
+        font=dict(color=font_color)
     )
 
     return fig
