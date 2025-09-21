@@ -1,0 +1,69 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# Exclude ALL data files by default
+*.csv
+*.xlsx
+*.xls
+*.json
+*.txt
+*.dat
+*.bin
+
+# Exclude large data directories completely
+Data Sets/
+
+# Exclude previous versions
+Previous Versions/
+
+# Exclude documentation files (except .md)
+*.pdf
+*.doc
+*.docx
+
+# Temporary files
+*.tmp
+*.log
+
+# But INCLUDE specific files we want to track:
+# Python files are included by default (not excluded above)
+# Markdown files are included by default
+# Support CSV directory files - we'll add these explicitly
