@@ -211,7 +211,8 @@ def render_controls(contents):
             options=[
                 {'label': 'Black Plane', 'value': 'black'},
                 {'label': 'Days Above Threshold', 'value': 'heatmap_above'},
-                {'label': 'Days Below Threshold', 'value': 'heatmap_below'}
+                {'label': 'Days Below Threshold', 'value': 'heatmap_below'},
+                {'label': 'Penetration Clustering', 'value': 'penetration_clustering'}
             ],
             value='black',
             clearable=False,
@@ -612,6 +613,64 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
                     name='Threshold Bands Below',
                     customdata=customdata_plane,
                     hovertemplate='<b>Year:</b> %{customdata[0]}<br><b>Day of Year:</b> %{customdata[1]}<br><b>Days Below Threshold:</b> %{customdata[2]}<extra></extra>'
+                )
+            )
+        elif threshold_mode == 'penetration_clustering':
+            # Create density heatmap of threshold penetrations
+            # Find all penetration points (where data crosses threshold)
+            penetration_mask = (z > threshold_value)  # Can be modified for below threshold too
+            
+            # Create a density matrix to accumulate clustering
+            density_matrix = np.zeros_like(z, dtype=float)
+            
+            # Define clustering radius (in grid units)
+            cluster_radius_y = 15  # days
+            cluster_radius_x = 2   # years
+            
+            # For each penetration point, add a Gaussian blob
+            y_indices, x_indices = np.where(penetration_mask)
+            
+            for i in range(len(y_indices)):
+                yi, xi = y_indices[i], x_indices[i]
+                
+                # Create Gaussian kernel around this penetration
+                for dy in range(-cluster_radius_y, cluster_radius_y + 1):
+                    for dx in range(-cluster_radius_x, cluster_radius_x + 1):
+                        ny, nx = yi + dy, xi + dx
+                        
+                        # Check bounds
+                        if 0 <= ny < len(y) and 0 <= nx < len(x):
+                            # Gaussian weight based on distance
+                            dist_y = dy / cluster_radius_y
+                            dist_x = dx / cluster_radius_x
+                            weight = np.exp(-(dist_y**2 + dist_x**2) / 2)
+                            density_matrix[ny, nx] += weight
+            
+            # Normalize density for better visualization
+            if density_matrix.max() > 0:
+                density_matrix = density_matrix / density_matrix.max()
+            
+            # Create customdata for tooltips
+            year_labels = np.array(x)
+            day_labels = np.array(y)
+            customdata_plane = np.empty((len(y), len(x)), dtype=object)
+            for i in range(len(y)):
+                for j in range(len(x)):
+                    customdata_plane[i, j] = [year_labels[j], day_labels[i], density_matrix[i, j]]
+            
+            fig.add_trace(
+                go.Surface(
+                    x=x,
+                    y=y,
+                    z=z_plane,
+                    surfacecolor=density_matrix,
+                    colorscale='Hot',  # Good for showing clustering intensity
+                    colorbar=dict(title='Penetration Density', x=1.13),
+                    showscale=True,
+                    opacity=0.9,
+                    name='Threshold Penetration Clustering',
+                    customdata=customdata_plane,
+                    hovertemplate='<b>Year:</b> %{customdata[0]}<br><b>Day of Year:</b> %{customdata[1]}<br><b>Cluster Density:</b> %{customdata[2]:.3f}<extra></extra>'
                 )
             )
         else:  # threshold_mode == 'black'
