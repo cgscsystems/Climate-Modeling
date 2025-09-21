@@ -5,6 +5,7 @@ from dash import Dash, dcc, html, Input, Output, State, ctx
 from scipy.ndimage import gaussian_filter
 import base64
 import io
+import json
 import requests
 import re
 from datetime import datetime
@@ -121,7 +122,7 @@ app.layout = html.Div([
             html.Div(id='sidebar-container', children=[
                 dcc.Upload(
                     id='upload-data',
-                    children=html.Button('Upload Weather CSV', id='upload-button', style={'width': '100%', 'fontSize': 12, 'padding': '4px'}),
+                    children=html.Button('Upload Weather Data (CSV/JSON)', id='upload-button', style={'width': '100%', 'fontSize': 12, 'padding': '4px'}),
                     multiple=False,
                     style={'marginBottom': '8px'}
                 ),
@@ -146,17 +147,82 @@ app.layout = html.Div([
     ])
 ], style={'height': '100vh', 'margin': 0, 'padding': 0, 'fontFamily': 'Segoe UI, Arial, sans-serif'})
 
-# ---- Helper: Parse Uploaded CSV ----
+# ---- Helper: Parse JSON Time Series ----
+def parse_json_data(json_data):
+    """
+    Parse JSON time series data in the format:
+    [{"name": "year", "data": [daily_values...]}, ...]
+    Convert to the same format as CSV data.
+    """
+    all_data = []
+    
+    for series in json_data:
+        series_name = series['name']
+        daily_values = series['data']
+        
+        # Skip statistical series (keep only year data)
+        if not series_name.isdigit():
+            continue
+            
+        year = int(series_name)
+        
+        # Create dates for the year (assuming Jan 1 start, 366 days to handle leap years)
+        dates = pd.date_range(start=f'{year}-01-01', periods=len(daily_values), freq='D')
+        
+        for i, (date, value) in enumerate(zip(dates, daily_values)):
+            if value is not None:  # Skip null values
+                # Create the variable name (you can customize this)
+                variable_name = 'sea_surface_temp'  # Default name, could be extracted from filename
+                
+                # Adjust year for December dates (matching CSV logic)
+                adjusted_year = date.year + 1 if date.month == 12 else date.year
+                
+                all_data.append({
+                    'variable': variable_name,
+                    'year': adjusted_year,
+                    'md': date.strftime('%m-%d'),
+                    'date': date,
+                    'value': float(value)
+                })
+    
+    return pd.DataFrame(all_data)
+
+# ---- Helper: Parse Uploaded CSV or JSON ----
 def parse_contents(contents):
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
+    
     try:
-        # Try utf-8 first
+        # First, decode the content
         try:
-            df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+            content_str = decoded.decode('utf-8')
         except UnicodeDecodeError:
-            # Fallback to latin1 if utf-8 fails
-            df = pd.read_csv(io.StringIO(decoded.decode('latin1')))
+            content_str = decoded.decode('latin1')
+        
+        # Try to parse as JSON first
+        try:
+            json_data = json.loads(content_str)
+            # Check if it's our expected JSON format (array of objects with 'name' and 'data')
+            if (isinstance(json_data, list) and 
+                len(json_data) > 0 and 
+                isinstance(json_data[0], dict) and 
+                'name' in json_data[0] and 
+                'data' in json_data[0]):
+                
+                plot_data = parse_json_data(json_data)
+                if not plot_data.empty:
+                    return plot_data, None
+                else:
+                    return None, "No valid numeric year data found in JSON file"
+            else:
+                # Not our expected JSON format, fall through to CSV parsing
+                pass
+        except json.JSONDecodeError:
+            # Not valid JSON, try CSV parsing
+            pass
+        
+        # Parse as CSV
+        df = pd.read_csv(io.StringIO(content_str))
         df.columns = [col.strip().lower() for col in df.columns]
         df.rename(columns={df.columns[0]: "date"}, inplace=True)
         df['date'] = pd.to_datetime(df['date'].astype(str).str.strip(), format='%Y-%m-%d', errors='coerce')
@@ -168,8 +234,9 @@ def parse_contents(contents):
         df_melted.sort_values(by=['variable', 'date'], inplace=True)
         plot_data = df_melted.dropna(subset=['value'])[['variable', 'year', 'md', 'date', 'value']]
         return plot_data, None
+        
     except Exception as e:
-        return None, str(e)
+        return None, f"Error parsing file (tried both JSON and CSV formats): {str(e)}"
 
 @app.callback(
     Output('controls-container', 'children'),
@@ -1004,6 +1071,7 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
     scene_config = dict(
         bgcolor=scene_bgcolor,
         xaxis=dict(
+            title=dict(text="", font=dict(size=1, color='rgba(0,0,0,0)')),
             tickmode='array',
             tickvals=x_tick_vals,
             ticktext=x_tick_text,
@@ -1013,6 +1081,7 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
             showbackground=True
         ),
         yaxis=dict(
+            title=dict(text="", font=dict(size=1, color='rgba(0,0,0,0)')),
             tickmode='array',
             tickvals=month_days,
             ticktext=month_labels,
@@ -1022,6 +1091,7 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
             showbackground=True
         ),
         zaxis=dict(
+            title=dict(text="", font=dict(size=1, color='rgba(0,0,0,0)')),
             color=axis_color,
             gridcolor=gridline_color,
             backgroundcolor=axis_bgcolor,
