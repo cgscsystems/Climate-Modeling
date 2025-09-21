@@ -67,3 +67,8 @@ Previous Versions/
 # Python files are included by default (not excluded above)
 # Markdown files are included by default
 # Support CSV directory files - we'll add these explicitly
+
+# Include specific required files from GitHub version
+!climate_station_list.csv
+!requirements.txt
+!README.md
