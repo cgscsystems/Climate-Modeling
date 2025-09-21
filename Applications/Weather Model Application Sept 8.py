@@ -205,6 +205,18 @@ def render_controls(contents):
         ),
         html.Div(id='slider-container'),  # Threshold slider will appear here
 
+        html.Label("Threshold Plane Mode:"),
+        dcc.Dropdown(
+            id='threshold-mode-dropdown',
+            options=[
+                {'label': 'Black Plane', 'value': 'black'},
+                {'label': 'Days Above Threshold', 'value': 'heatmap'}
+            ],
+            value='black',
+            clearable=False,
+            style={'marginBottom': '8px'}
+        ),
+
         html.Label("Select Start Month:"),
         dcc.Dropdown(
             id='start-month-dropdown',
@@ -365,6 +377,7 @@ def update_slider(variable, plot_data_json):
     Input('surface-mode', 'value'),
     Input('threshold-slider', 'value'),
     Input('plane-toggle', 'value'),
+    Input('threshold-mode-dropdown', 'value'),
     Input('x-aspect-input', 'value'),
     Input('y-aspect-input', 'value'),
     Input('z-aspect-input', 'value'),
@@ -379,7 +392,7 @@ def update_slider(variable, plot_data_json):
     State('value-3d-graph', 'relayoutData')
 )
 def update_graph(selected_variable, start_month, display_mode, surface_mode, threshold_z, plane_toggle,
-                 x_aspect, y_aspect, z_aspect, color_palette, plot_style, enso_toggle, enso_opacity, year_range,
+                 threshold_mode, x_aspect, y_aspect, z_aspect, color_palette, plot_style, enso_toggle, enso_opacity, year_range,
                  outlier_count, outlier_method, plot_data_json, relayout_data):
     if plot_data_json is None:
         return go.Figure()
@@ -540,35 +553,51 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
         threshold_value = min_val + (max_val - min_val) * (threshold_z / 100.0)
 
     if plane_toggle == 'show':
-        # Bin the number of instances above the threshold for each year (x-axis)
-        # z shape: (len(y), len(x)), where x = years, y = day_of_year
-        # For each year (column), count number of days above threshold
-        band_counts = (z > threshold_value).sum(axis=0)  # shape: (len(x),)
-        # Repeat band_counts for each y to make a 2D array for surfacecolor
-        band_matrix = np.tile(band_counts, (len(y), 1))
         z_plane = np.full_like(z, fill_value=threshold_value, dtype=float)
-        # Prepare customdata for tooltips: year, day, count
-        year_labels = np.array(x)
-        day_labels = np.array(y)
-        customdata_plane = np.empty((len(y), len(x)), dtype=object)
-        for i in range(len(y)):
-            for j in range(len(x)):
-                customdata_plane[i, j] = [year_labels[j], day_labels[i], band_matrix[i, j]]
-        fig.add_trace(
-            go.Surface(
-                x=x,
-                y=y,
-                z=z_plane,
-                surfacecolor=band_matrix,
-                colorscale=color_palette,
-                colorbar=dict(title='Days Above Threshold (per Year)', x=1.13),
-                showscale=True,
-                opacity=1.0,
-                name='Threshold Bands',
-                customdata=customdata_plane,
-                hovertemplate='<b>Year:</b> %{customdata[0]}<br><b>Day of Year:</b> %{customdata[1]}<br><b>Days Above Threshold:</b> %{customdata[2]}<extra></extra>'
+        
+        if threshold_mode == 'heatmap':
+            # Bin the number of instances above the threshold for each year (x-axis)
+            # z shape: (len(y), len(x)), where x = years, y = day_of_year
+            # For each year (column), count number of days above threshold
+            band_counts = (z > threshold_value).sum(axis=0)  # shape: (len(x),)
+            # Repeat band_counts for each y to make a 2D array for surfacecolor
+            band_matrix = np.tile(band_counts, (len(y), 1))
+            # Prepare customdata for tooltips: year, day, count
+            year_labels = np.array(x)
+            day_labels = np.array(y)
+            customdata_plane = np.empty((len(y), len(x)), dtype=object)
+            for i in range(len(y)):
+                for j in range(len(x)):
+                    customdata_plane[i, j] = [year_labels[j], day_labels[i], band_matrix[i, j]]
+            fig.add_trace(
+                go.Surface(
+                    x=x,
+                    y=y,
+                    z=z_plane,
+                    surfacecolor=band_matrix,
+                    colorscale=color_palette,
+                    colorbar=dict(title='Days Above Threshold (per Year)', x=1.13),
+                    showscale=True,
+                    opacity=1.0,
+                    name='Threshold Bands',
+                    customdata=customdata_plane,
+                    hovertemplate='<b>Year:</b> %{customdata[0]}<br><b>Day of Year:</b> %{customdata[1]}<br><b>Days Above Threshold:</b> %{customdata[2]}<extra></extra>'
+                )
             )
-        )
+        else:  # threshold_mode == 'black'
+            # Simple black plane
+            fig.add_trace(
+                go.Surface(
+                    x=x,
+                    y=y,
+                    z=z_plane,
+                    colorscale=[[0, 'black'], [1, 'black']],
+                    showscale=False,
+                    opacity=0.8,
+                    name='Threshold Plane',
+                    hovertemplate='<b>Threshold Value:</b> %{z:.2f}<extra></extra>'
+                )
+            )
 
     # --- ENSO overlays (monthly curtains; sign color, intensity -> opacity) ---
     if enso_toggle == 'show' and ENSO_DF is not None and len(x) > 1 and len(y) > 1:
