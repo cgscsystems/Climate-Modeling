@@ -265,6 +265,18 @@ def render_controls(contents):
             style={'marginBottom': '8px'}
         ),
 
+        html.Label("Month Axis Direction:"),
+        dcc.RadioItems(
+            id='month-axis-toggle',
+            options=[
+                {'label': 'Jan→Dec', 'value': 'normal'},
+                {'label': 'Dec→Jan', 'value': 'reversed'}
+            ],
+            value='normal',
+            labelStyle={'display': 'inline-block', 'marginRight': '10px'},
+            style={'marginBottom': '8px'}
+        ),
+
         html.Label("Select Variable:"),
         dcc.Dropdown(
             id='variable-dropdown',
@@ -650,11 +662,12 @@ def update_control_styling(dark_mode):
     Input('outlier-method-dropdown', 'value'),
     Input('plot-data-store', 'data'),
     Input('dark-mode-toggle', 'value'),
+    Input('month-axis-toggle', 'value'),
     State('value-3d-graph', 'relayoutData')
 )
 def update_graph(selected_variable, start_month, display_mode, surface_mode, threshold_z, plane_toggle,
                  threshold_mode, x_aspect, y_aspect, z_aspect, color_palette, plot_style, enso_toggle, enso_opacity, year_range,
-                 outlier_count, outlier_method, plot_data_json, dark_mode, relayout_data):
+                 outlier_count, outlier_method, plot_data_json, dark_mode, month_axis_direction, relayout_data):
     if plot_data_json is None:
         return go.Figure()
     # Avoid unnecessary DataFrame copies
@@ -1085,6 +1098,7 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
             tickmode='array',
             tickvals=month_days,
             ticktext=month_labels,
+            autorange='reversed' if month_axis_direction == 'reversed' else True,
             color=axis_color,
             gridcolor=gridline_color,
             backgroundcolor=axis_bgcolor,
