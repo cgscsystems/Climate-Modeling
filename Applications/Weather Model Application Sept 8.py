@@ -797,19 +797,16 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
 
     scene_config = dict(
         xaxis=dict(
-            title='Year',
             tickmode='array',
             tickvals=x_tick_vals,
             ticktext=x_tick_text
         ),
         yaxis=dict(
-            title=f'Day ({start_month} Start)',
             tickmode='array',
             tickvals=month_days,
             ticktext=month_labels
         ),
         zaxis=dict(
-            title='Measured Value'
         ),
         aspectratio=dict(x=x_aspect, y=y_aspect, z=z_aspect)
     )
