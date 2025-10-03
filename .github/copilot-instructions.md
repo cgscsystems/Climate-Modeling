@@ -1,6 +1,6 @@
 # Climate Modeling AI Assistant Instructions
 
-<!-- Last Updated: 2025-10-03 10:09:32
+<!-- Last Updated: 2025-10-03 10:24:21
 
 ## Project Overview
 This is a **climate data modeling workspace** focused on weather station data ETL, 3D visualization, and ENSO correlation analysis. The project processes Environment Canada (EC) and NOAA weather station data through standardized pipelines and displays temporal patterns using Plotly/Dash.
@@ -126,3 +126,8 @@ To commit without auto-maintenance (if needed):
 ```bash
 git commit --no-verify -m "your message"
 ```
+
+## Visualizations Directory
+- **Current samples**: 4 visualization files (MP4/BMP) are tracked as examples
+- **Future files**: New files in `Visualizations/` are automatically ignored
+- **Manual inclusion**: Use `git add -f Visualizations/filename` to explicitly track new samples

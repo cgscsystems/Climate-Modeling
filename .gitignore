@@ -54,6 +54,14 @@ Data Sets/
 # Exclude previous versions
 Previous Versions/
 
+# Exclude future additions to Visualizations (keep current sample files)
+Visualizations/*
+# But keep the current sample visualization files that are already tracked
+!Visualizations/2m Surface Absolute 2025-09-28.mp4
+!Visualizations/2m Surface Absolute with Threshold 2025-09-28.mp4
+!Visualizations/2m Surface Anomoly 2025-09-28.mp4
+!Visualizations/2m Surface Temps 2025-09-28.bmp
+
 # Exclude documentation files (except .md)
 *.pdf
 *.doc
