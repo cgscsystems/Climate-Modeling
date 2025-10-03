@@ -1,7 +1,12 @@
 {
     "folders": [
         {
+            "name": "Weather Modeling (Main)",
             "path": "."
+        },
+        {
+            "name": "Coding Projects (Parent)",
+            "path": ".."
         }
     ],
     "settings": {
