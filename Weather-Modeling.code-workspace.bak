@@ -1,0 +1,35 @@
+{
+    "folders": [
+        {
+            "name": "Climate Data Visualisation (Main)",
+            "path": "."
+        },
+        {
+            "name": "Coding Projects (Parent)",
+            "path": ".."
+        }
+    ],
+    "settings": {
+        "python.pythonPath": "C:/Coding Projects/.venv/Scripts/python.exe",
+        "python.defaultInterpreterPath": "C:/Coding Projects/.venv/Scripts/python.exe",
+        "files.associations": {
+            "*.csv": "csv",
+            "copilot-instructions.md": "markdown"
+        },
+        "python.analysis.autoImportCompletions": true,
+        "python.analysis.typeCheckingMode": "basic",
+        "explorer.fileNesting.enabled": true,
+        "explorer.fileNesting.patterns": {
+            "*.py": "${capture}_test.py,${capture}_backup.py",
+            "*.csv": "${capture}_cleaned.csv,${capture}_processed.csv"
+        }
+    },
+    "extensions": {
+        "recommendations": [
+            "github.copilot",
+            "github.copilot-chat",
+            "ms-python.python",
+            "mechatroner.rainbow-csv"
+        ]
+    }
+}
