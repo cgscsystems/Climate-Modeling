@@ -133,8 +133,8 @@ def categorize_enso_phases(df):
     import numpy as np
     
     df['enso_phase'] = np.where(
-        df['oni_anomaly'] >= 0.5, 'El Niño',
-        np.where(df['oni_anomaly'] <= -0.5, 'La Niña', 'Neutral')
+        df['oni_anomaly'] >= 0.5, 'El Nino',
+        np.where(df['oni_anomaly'] <= -0.5, 'La Nina', 'Neutral')
     )
     
     return df

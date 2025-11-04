@@ -10,9 +10,11 @@ import requests
 import re
 from datetime import datetime
 
-# --- ENSO: static file + styling ---
-# Point this to your prebuilt CSV (date, oni, intensity). Date must be YYYY-MM-01.
-ENSO_CSV_PATH = r"C:\\Coding Projects\\Climate Data Visualization\\Applications\\Support CSV\\enso monthly phases 2025-08-12.csv"
+# --- ENSO: live and static file + styling ---
+# Live ENSO data path (preferred)
+ENSO_LIVE_PATH = r"C:\\Coding Projects\\Climate Data Visualization\\Applications\\Support CSV\\ENSO Indices.csv"
+# Fallback static CSV (date, oni, intensity). Date must be YYYY-MM-01.
+ENSO_STATIC_PATH = r"C:\\Coding Projects\\Climate Data Visualization\\Applications\\Support CSV\\enso monthly phases 2025-08-12.csv"
 
 # Intensity -> base opacity (before global slider multiplier)
 ENSO_OPACITY_LEVEL = {
@@ -28,7 +30,88 @@ ENSO_SIGN_COLOR = {
     "cold": "rgba( 80, 80,255, 1.0)",   # blue-ish
 }
 
-def load_static_enso(path=ENSO_CSV_PATH):
+def load_enso_data():
+    """Load ENSO data, preferring live data over static fallback."""
+    # Try live data first
+    try:
+        return load_live_enso(ENSO_LIVE_PATH)
+    except Exception as e:
+        print(f"[ENSO] Could not load live ENSO data: {e}")
+        print(f"[ENSO] Falling back to static data...")
+        try:
+            return load_static_enso(ENSO_STATIC_PATH)
+        except Exception as e2:
+            print(f"[ENSO] Could not load static ENSO data: {e2}")
+            return None
+
+def load_live_enso(path=ENSO_LIVE_PATH):
+    """Load live ENSO data from ENSO Indices Compiler output."""
+    df = pd.read_csv(path)
+    # Normalize column names
+    df.columns = [c.strip().lower() for c in df.columns]
+    
+    # Convert date and extract components
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"])
+    df["year"] = df["date"].dt.year.astype(int)
+    df["month"] = df["date"].dt.month.astype(int)
+    
+    # Use ONI anomaly if available, otherwise fall back to ONI total
+    if "oni_anomaly" in df.columns:
+        df["oni"] = pd.to_numeric(df["oni_anomaly"], errors="coerce")
+    elif "oni_total" in df.columns:
+        df["oni"] = pd.to_numeric(df["oni_total"], errors="coerce")
+    else:
+        raise ValueError("No ONI data found in live ENSO file")
+    
+    # Convert ENSO phase to intensity levels
+    if "enso_phase" in df.columns:
+        df["enso_phase"] = df["enso_phase"].astype(str).str.strip()
+        # Map ENSO phases to intensity levels based on ONI magnitude
+        df["intensity"] = df.apply(lambda row: map_phase_to_intensity(row["enso_phase"], row["oni"]), axis=1)
+    else:
+        # Generate intensity from ONI values if no phase column
+        df["intensity"] = df["oni"].apply(lambda x: oni_to_intensity(x))
+    
+    # Derive sign from ONI
+    df["sign"] = np.where(df["oni"] >= 0, "warm", "cold")
+    
+    return df
+
+def map_phase_to_intensity(phase, oni_value):
+    """Map ENSO phase and ONI value to intensity level."""
+    if phase == "Neutral":
+        return "Neutral"
+    
+    # For El Nino and La Nina, use ONI magnitude to determine intensity
+    abs_oni = abs(oni_value) if pd.notna(oni_value) else 0
+    
+    if abs_oni >= 2.0:
+        return "Strong"
+    elif abs_oni >= 1.5:
+        return "Medium"
+    elif abs_oni >= 0.5:
+        return "Weak"
+    else:
+        return "Neutral"
+
+def oni_to_intensity(oni_value):
+    """Convert ONI value to intensity category."""
+    if pd.isna(oni_value):
+        return "Neutral"
+    
+    abs_oni = abs(oni_value)
+    if abs_oni >= 2.0:
+        return "Strong"
+    elif abs_oni >= 1.5:
+        return "Medium"
+    elif abs_oni >= 0.5:
+        return "Weak"
+    else:
+        return "Neutral"
+
+def load_static_enso(path=ENSO_STATIC_PATH):
+    """Load static ENSO data (legacy format)."""
     df = pd.read_csv(path)
     # Normalize column names and types
     df.columns = [c.strip().lower() for c in df.columns]
@@ -47,10 +130,15 @@ def load_static_enso(path=ENSO_CSV_PATH):
 
 ENSO_DF = None
 try:
-    ENSO_DF = load_static_enso()
+    ENSO_DF = load_enso_data()
+    if ENSO_DF is not None:
+        print(f"[ENSO] Successfully loaded {len(ENSO_DF)} ENSO records from {ENSO_DF['date'].min()} to {ENSO_DF['date'].max()}")
+    else:
+        print("[ENSO] No ENSO data available")
 except Exception as _e:
     # We'll proceed without overlay if file is missing; message printed in console
-    print(f"[ENSO] Could not load static ENSO file: {_e}")
+    print(f"[ENSO] Could not load ENSO data: {_e}")
+    ENSO_DF = None
 
 
 # ---- Dash App ----
