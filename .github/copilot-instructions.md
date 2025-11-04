@@ -1,6 +1,6 @@
 # Climate Modeling AI Assistant Instructions
 
-<!-- Last Updated: 2025-11-04 15:48:30
+<!-- Last Updated: 2025-11-04 16:22:34
 
 ## Project Overview
 This is a **climate data modeling workspace** focused on weather station data ETL, 3D visualization, and ENSO correlation analysis. The project processes Environment Canada (EC) and NOAA weather station data through standardized pipelines and displays temporal patterns using Plotly/Dash.
@@ -68,8 +68,10 @@ groupwise_aggregation() → calculate_columns()
 - **Launch pattern**: Dash apps auto-open browser via `webbrowser.open_new("http://127.0.0.1:8050/")`
 
 ## Data Source URLs
-- **Environment Canada**: `https://dd.weather.gc.ca/climate/observations/daily/csv/{province_code}/`
+- **Environment Canada**: `https://dd.weather.gc.ca/today/climate/observations/daily/csv/{province_code}/` (Updated Nov 2025)
 - **NOAA**: `https://www.ncei.noaa.gov/data/daily-summaries/access/`
+
+**Note**: Environment Canada changed their URL structure in 2025. Old URLs under `/climate/observations/` no longer work.
 
 ## Common Workflows
 
@@ -94,6 +96,7 @@ python "Applications/Climate Data Visualizer.py"
 ### Debugging Data Pipeline Issues
 - Check encoding with fallback: `utf-8` → `latin1` → `iso-8859-1`
 - Verify station ID format matches URL patterns (`_{station_id}_` for EC, station ID directly for NOAA)
+- **NEW**: EC file format changed Nov 2025: `climate_daily_{province}_{station_id}_{year}_P1D.csv`
 - Validate date parsing with `pd.to_datetime(errors='coerce')` then `dropna()`
 
 ### Performance Optimization

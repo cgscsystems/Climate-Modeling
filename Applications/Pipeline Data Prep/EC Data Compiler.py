@@ -24,7 +24,8 @@ def haversine(lat1, lon1, lat2, lon2):
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 def scrape_data_set(station_ranges: dict, province_code: str):
-    BASE_URL = f"https://dd.weather.gc.ca/climate/observations/daily/csv/{province_code}/"
+    # Updated URL structure - Environment Canada changed their directory structure in 2025
+    BASE_URL = f"https://dd.weather.gc.ca/today/climate/observations/daily/csv/{province_code}/"
     try:
         resp = requests.get(BASE_URL)
         resp.raise_for_status()
@@ -44,11 +45,15 @@ def scrape_data_set(station_ranges: dict, province_code: str):
     target_links = []
     for link in csv_links:
         for station_id, (start_yr, end_yr) in station_ranges.items():
+            # Updated file naming pattern: climate_daily_{province_code}_{station_id}_{year}_P1D.csv
             if isinstance(link, str) and f"_{station_id}_" in link and link.endswith("_P1D.csv"):
                 try:
-                    year = int(link.split("_")[4])
-                    if start_yr <= year <= end_yr:
-                        target_links.append(link)
+                    # New filename format: climate_daily_AB_3010010_2002_P1D.csv
+                    parts = link.split("_")
+                    if len(parts) >= 5 and parts[0] == "climate" and parts[1] == "daily":
+                        year = int(parts[4])  # Year is now the 5th part (index 4)
+                        if start_yr <= year <= end_yr:
+                            target_links.append(link)
                 except Exception:
                     continue
 
