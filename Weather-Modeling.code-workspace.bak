@@ -22,8 +22,8 @@
                      "explorer.fileNesting.patterns":  {
                                                            "*.py":  "${capture}_test.py,${capture}_backup.py",
                                                            "*.csv":  "${capture}_cleaned.csv,${capture}_processed.csv"
-                                                    },
-                                                    "powershell.cwd": "Climate Data Visualisation (Main)"
+                                                       },
+                     "powershell.cwd":  "Climate Data Visualisation (Main)"
                  },
     "extensions":  {
                        "recommendations":  [
@@ -34,7 +34,7 @@
                                            ]
                    },
     "_metadata":  {
-                      "lastUpdated":  "2025-10-04 11:49:26",
+                      "lastUpdated":  "2025-11-04 15:47:17",
                       "recentChanges":  ".github/copilot-instructions.md"
                   }
 }
