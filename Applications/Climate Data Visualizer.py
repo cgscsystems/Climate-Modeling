@@ -12,7 +12,7 @@ from datetime import datetime
 
 # --- ENSO: static file + styling ---
 # Point this to your prebuilt CSV (date, oni, intensity). Date must be YYYY-MM-01.
-ENSO_CSV_PATH = r"Support CSV\enso monthly phases 2025-08-12.csv"
+ENSO_CSV_PATH = r"C:\\Coding Projects\\Climate Data Visualization\\Applications\\Support CSV\\enso monthly phases 2025-08-12.csv"
 
 # Intensity -> base opacity (before global slider multiplier)
 ENSO_OPACITY_LEVEL = {
