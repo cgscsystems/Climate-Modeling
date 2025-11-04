@@ -407,6 +407,61 @@ def main_gui():
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load file: {e}")
 
+    def update_station_list_from_web():
+        """Download the latest station list from Environment Canada"""
+        try:
+            # Get the directory of the current script
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            station_file_path = os.path.join(script_dir, "..", "Support CSV", "EC_climate_station_list.csv")
+            station_file_path = os.path.normpath(station_file_path)
+            
+            # Download the latest station list
+            url = "https://dd.weather.gc.ca/today/climate/observations/climate_station_list.csv"
+            print("📥 Downloading latest station list from Environment Canada...")
+            response = requests.get(url, stream=True)
+            response.raise_for_status()
+            
+            # Save to the Support CSV directory
+            with open(station_file_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            
+            # Load the updated file
+            df = pd.read_csv(station_file_path, dtype=str)
+            df['Latitude'] = pd.to_numeric(df['Latitude'], errors='coerce')
+            df['Longitude'] = pd.to_numeric(df['Longitude'], errors='coerce')
+            df['DLY First Year'] = pd.to_numeric(df['DLY First Year'], errors='coerce')
+            df['DLY Last Year'] = pd.to_numeric(df['DLY Last Year'], errors='coerce')
+            data['df'] = df
+            populate_provinces()
+            
+            messagebox.showinfo("Success", f"✅ Station list updated successfully!\nSaved to: {station_file_path}")
+            
+        except Exception as e:
+            messagebox.showerror("Update Error", f"Failed to update station list: {e}")
+
+    def load_default_station_file():
+        """Load the default station list from Support CSV directory"""
+        try:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            station_file_path = os.path.join(script_dir, "..", "Support CSV", "EC_climate_station_list.csv")
+            station_file_path = os.path.normpath(station_file_path)
+            
+            if not os.path.exists(station_file_path):
+                messagebox.showerror("Error", f"Default station file not found at:\n{station_file_path}")
+                return
+                
+            df = pd.read_csv(station_file_path, dtype=str)
+            df['Latitude'] = pd.to_numeric(df['Latitude'], errors='coerce')
+            df['Longitude'] = pd.to_numeric(df['Longitude'], errors='coerce')
+            df['DLY First Year'] = pd.to_numeric(df['DLY First Year'], errors='coerce')
+            df['DLY Last Year'] = pd.to_numeric(df['DLY Last Year'], errors='coerce')
+            data['df'] = df
+            populate_provinces()
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load default station file: {e}")
+
     def populate_provinces():
         global province_var
         global province_menu
@@ -446,16 +501,38 @@ def main_gui():
 
     def show_station_picker():
         root.deiconify()
-        tk.Button(root, text="Load Station File", command=load_file).pack(pady=5)
-        province_var = tk.StringVar()
+        
+        # File loading section
+        file_frame = tk.Frame(root)
+        file_frame.pack(pady=5)
+        tk.Button(file_frame, text="Load Station File", command=load_file).pack(side=tk.LEFT, padx=5)
+        tk.Button(file_frame, text="Load Default", command=load_default_station_file).pack(side=tk.LEFT, padx=5)
+        tk.Button(file_frame, text="Update from Web", command=update_station_list_from_web).pack(side=tk.LEFT, padx=5)
+        
         tk.Label(root, text="Select Province:").pack()
         global province_menu
         province_menu = tk.OptionMenu(root, province_var, "")
         province_menu.pack()
+        
         tk.Label(root, text="Select Center Station:").pack()
+        
+        # Create frame for listbox and scrollbar
+        listbox_frame = tk.Frame(root)
+        listbox_frame.pack(pady=5)
+        
+        # Create listbox with scrollbar
         global station_listbox
-        station_listbox = tk.Listbox(root, width=60, height=10)
-        station_listbox.pack()
+        station_listbox = tk.Listbox(listbox_frame, width=60, height=15)
+        scrollbar = tk.Scrollbar(listbox_frame, orient=tk.VERTICAL)
+        
+        # Configure scrollbar
+        station_listbox.config(yscrollcommand=scrollbar.set)
+        scrollbar.config(command=station_listbox.yview)
+        
+        # Pack listbox and scrollbar
+        station_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
         tk.Label(root, text="Select Radius:").pack()
         global radius_var
         radius_var = tk.StringVar(value="1 km")

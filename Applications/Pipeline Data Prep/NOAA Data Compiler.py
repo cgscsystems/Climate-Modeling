@@ -872,8 +872,11 @@ def main_gui():
         tk.Label(info_frame, text="Note: Maximum available date range will be used automatically", 
                 font=("Arial", 9), fg="gray").pack()        # Radius selection
         tk.Label(root, text="Select Search Radius:").pack()
+        radius_note = tk.Label(root, text="(Use 1 km for single station only)", 
+                              font=("Arial", 8), fg="gray")
+        radius_note.pack()
         global radius_var
-        tk.OptionMenu(root, radius_var, "10 km", "25 km", "50 km", "100 km", "200 km").pack()
+        tk.OptionMenu(root, radius_var, "1 km", "10 km", "25 km", "50 km", "100 km", "200 km").pack()
         
         # Run button
         tk.Button(root, text="Download NOAA Climate Data", command=process_noaa_data, 
