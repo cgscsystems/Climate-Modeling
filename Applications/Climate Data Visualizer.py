@@ -173,6 +173,76 @@ def load_static_enso(path):
     df.loc[~df["intensity"].isin(ENSO_OPACITY_LEVEL.keys()), "intensity"] = "Neutral"
     return df
 
+def create_enso_threshold_plane(x, y, z, threshold_value, year_range, start_month, enso_opacity):
+    """Create ENSO phase overlay on threshold plane."""
+    if ENSO_DF is None:
+        return None
+    
+    min_year, max_year = year_range
+    base_year = 2001
+    anchor_date = pd.to_datetime(f"{base_year}-{start_month}")
+    
+    # Filter ENSO data to visible years
+    enso = ENSO_DF[(ENSO_DF["year"] >= min_year) & (ENSO_DF["year"] <= max_year)].copy()
+    if enso.empty:
+        return None
+    
+    # Create ENSO matrix aligned with the main data grid
+    enso_matrix = np.full_like(z, 0.0, dtype=float)  # Default to neutral (0)
+    
+    # Map ENSO phases to intensity values for color mapping
+    phase_values = {
+        "Neutral": 0.0,
+        "El Nino": 1.0,   # Warm colors
+        "La Nina": -1.0   # Cool colors
+    }
+    
+    # Map each month in ENSO data to the grid
+    for _, row in enso.iterrows():
+        year = row["year"]
+        month = row["month"]
+        
+        # Find year index in x array
+        if year not in x:
+            continue
+        year_idx = np.where(x == year)[0][0]
+        
+        # Calculate day-of-year position for this month
+        month_date = pd.to_datetime(f"{base_year}-{month:02d}-01")
+        day_of_year = ((month_date - anchor_date).days % 365) + 1
+        
+        # Find the closest day index in y array
+        day_idx = np.argmin(np.abs(y - day_of_year))
+        
+        # Get ENSO phase value
+        if "enso_phase" in row and pd.notna(row["enso_phase"]):
+            phase_value = phase_values.get(row["enso_phase"], 0.0)
+        else:
+            # Fallback: use sign for basic El Nino/La Nina detection
+            phase_value = phase_values.get(row.get("sign", "Neutral"), 0.0)
+        
+        # Apply phase value to a small region around this month
+        # This creates monthly "bands" across the year
+        next_month = month + 1 if month < 12 else 1
+        next_month_date = pd.to_datetime(f"{base_year}-{next_month:02d}-01")
+        next_day_of_year = ((next_month_date - anchor_date).days % 365) + 1
+        
+        # Handle year wrapping
+        if next_day_of_year > day_of_year:
+            day_range = range(max(0, np.argmin(np.abs(y - day_of_year))), 
+                            min(len(y), np.argmin(np.abs(y - next_day_of_year)) + 1))
+        else:
+            # Wraps around year boundary
+            day_range = list(range(max(0, np.argmin(np.abs(y - day_of_year))), len(y))) + \
+                       list(range(0, min(len(y), np.argmin(np.abs(y - next_day_of_year)) + 1)))
+        
+        # Apply ENSO value to this month's band
+        for d_idx in day_range:
+            if 0 <= d_idx < len(y):
+                enso_matrix[d_idx, year_idx] = phase_value
+    
+    return enso_matrix
+
 ENSO_DF = None
 try:
     ENSO_DF = load_enso_data()
@@ -497,7 +567,8 @@ def render_controls(contents):
                 {'label': 'Black Plane', 'value': 'black'},
                 {'label': 'Days Above Threshold', 'value': 'heatmap_above'},
                 {'label': 'Days Below Threshold', 'value': 'heatmap_below'},
-                {'label': 'Penetration Clustering', 'value': 'penetration_clustering'}
+                {'label': 'Penetration Clustering', 'value': 'penetration_clustering'},
+                {'label': 'ENSO Phases', 'value': 'enso_phases'}
             ],
             value='black',
             clearable=False,
@@ -579,13 +650,13 @@ def render_controls(contents):
             value='hide',
             labelStyle={'display': 'inline-block', 'marginRight': '10px'}
         ),
-        html.Label("ENSO Bar Opacity:"),
+        html.Label("Plane/ENSO Opacity:"),
         dcc.Slider(
             id='enso-opacity-slider',
             min=0.05,
             max=1.0,
             step=0.01,
-            value=0.25,
+            value=0.75,
             marks={0.05: '5%', 0.5: '50%', 1.0: '100%'},
             tooltip={'placement': 'bottom', 'always_visible': False}
         ),
@@ -962,7 +1033,68 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
     if plane_toggle == 'show':
         z_plane = np.full_like(z, fill_value=threshold_value, dtype=float)
         
-        if threshold_mode == 'heatmap_above':
+        # Apply opacity from ENSO slider to all threshold plane modes
+        plane_opacity = float(enso_opacity)  # Reuse ENSO opacity slider for all threshold planes
+        
+        if threshold_mode == 'enso_phases':
+            # NEW: ENSO phases threshold plane
+            enso_matrix = create_enso_threshold_plane(x, y, z, threshold_value, year_range, start_month, enso_opacity)
+            
+            if enso_matrix is not None:
+                # Create custom colorscale for ENSO phases
+                enso_colorscale = [
+                    [0.0, 'rgba(80, 80, 255, 1.0)'],   # La Nina (blue)
+                    [0.5, 'rgba(220, 220, 220, 1.0)'], # Neutral (gray)
+                    [1.0, 'rgba(255, 80, 80, 1.0)']    # El Nino (red)
+                ]
+                
+                # Normalize ENSO values to 0-1 range for colorscale
+                enso_normalized = (enso_matrix + 1.0) / 2.0  # Convert -1,0,1 to 0,0.5,1
+                
+                # Create customdata for tooltips
+                customdata_plane = np.empty((len(y), len(x)), dtype=object)
+                for i in range(len(y)):
+                    for j in range(len(x)):
+                        enso_val = enso_matrix[i, j]
+                        if enso_val > 0.5:
+                            phase_name = "El Nino"
+                        elif enso_val < -0.5:
+                            phase_name = "La Nina"
+                        else:
+                            phase_name = "Neutral"
+                        customdata_plane[i, j] = [x[j], y[i], phase_name, enso_val]
+                
+                fig.add_trace(
+                    go.Surface(
+                        x=x,
+                        y=y,
+                        z=z_plane,
+                        surfacecolor=enso_normalized,
+                        colorscale=enso_colorscale,
+                        colorbar=dict(title='ENSO Phase<br>Blue=La Nina<br>Gray=Neutral<br>Red=El Nino', x=1.13),
+                        showscale=True,
+                        opacity=plane_opacity,
+                        name='ENSO Phases',
+                        customdata=customdata_plane,
+                        hovertemplate='<b>Year:</b> %{customdata[0]}<br><b>Day of Year:</b> %{customdata[1]}<br><b>ENSO Phase:</b> %{customdata[2]}<br><b>Value:</b> %{customdata[3]:.2f}<extra></extra>'
+                    )
+                )
+            else:
+                # Fallback to black plane if no ENSO data
+                fig.add_trace(
+                    go.Surface(
+                        x=x,
+                        y=y,
+                        z=z_plane,
+                        colorscale=[[0, 'black'], [1, 'black']],
+                        showscale=False,
+                        opacity=plane_opacity,
+                        name='No ENSO Data',
+                        hovertemplate='<b>Threshold Value:</b> %{z:.2f}<br><b>No ENSO Data Available</b><extra></extra>'
+                    )
+                )
+        
+        elif threshold_mode == 'heatmap_above':
             # Bin the number of instances above the threshold for each year (x-axis)
             # z shape: (len(y), len(x)), where x = years, y = day_of_year
             # For each year (column), count number of days above threshold
@@ -985,7 +1117,7 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
                     colorscale=color_palette,
                     colorbar=dict(title='Days Above Threshold (per Year)', x=1.13),
                     showscale=True,
-                    opacity=1.0,
+                    opacity=plane_opacity,
                     name='Threshold Bands Above',
                     customdata=customdata_plane,
                     hovertemplate='<b>Year:</b> %{customdata[0]}<br><b>Day of Year:</b> %{customdata[1]}<br><b>Days Above Threshold:</b> %{customdata[2]}<extra></extra>'
@@ -1014,7 +1146,7 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
                     colorscale=color_palette,
                     colorbar=dict(title='Days Below Threshold (per Year)', x=1.13),
                     showscale=True,
-                    opacity=1.0,
+                    opacity=plane_opacity,
                     name='Threshold Bands Below',
                     customdata=customdata_plane,
                     hovertemplate='<b>Year:</b> %{customdata[0]}<br><b>Day of Year:</b> %{customdata[1]}<br><b>Days Below Threshold:</b> %{customdata[2]}<extra></extra>'
@@ -1072,7 +1204,7 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
                     colorscale='Hot',  # Good for showing clustering intensity
                     colorbar=dict(title='Penetration Density', x=1.13),
                     showscale=True,
-                    opacity=0.9,
+                    opacity=plane_opacity,
                     name='Threshold Penetration Clustering',
                     customdata=customdata_plane,
                     hovertemplate='<b>Year:</b> %{customdata[0]}<br><b>Day of Year:</b> %{customdata[1]}<br><b>Cluster Density:</b> %{customdata[2]:.3f}<extra></extra>'
@@ -1087,98 +1219,11 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
                     z=z_plane,
                     colorscale=[[0, 'black'], [1, 'black']],
                     showscale=False,
-                    opacity=0.8,
+                    opacity=plane_opacity,
                     name='Threshold Plane',
                     hovertemplate='<b>Threshold Value:</b> %{z:.2f}<extra></extra>'
                 )
             )
-
-    # --- ENSO overlays (monthly curtains; sign color, intensity -> opacity) ---
-    if enso_toggle == 'show' and ENSO_DF is not None and len(x) > 1 and len(y) > 1:
-        min_year, max_year = year_range
-
-        # Y-axis anchor: reuse the same anchor_date used for the surface
-        base_year = 2001
-        anchor_date = pd.to_datetime(f"{base_year}-{start_month}")
-
-        # Z extents to span the main surface
-        z_min, z_max = float(np.nanmin(z)), float(np.nanmax(z))
-        if not np.isfinite(z_min) or not np.isfinite(z_max) or z_min == z_max:
-            z_min, z_max = -1.0, 1.0  # fallback
-
-        # Limit ENSO rows to visible years
-        enso = ENSO_DF[(ENSO_DF["year"] >= min_year) & (ENSO_DF["year"] <= max_year)].copy()
-        if not enso.empty:
-            # Global multiplier from UI slider (0..1)
-            global_mult = float(enso_opacity)
-
-            # For y mapping we only need month boundaries relative to anchor.
-            # We'll compute the band's start (month 1st) and end (following month 1st) in the anchored year (base_year).
-            # If the band wraps across the 365-day boundary, we split into two curtains.
-            def y_pos_for_month(m):
-                d = pd.to_datetime(f"{base_year}-{int(m):02d}-01")
-                return ((d - anchor_date).days % 365) + 1
-
-            # group by (year, sign, intensity) to keep trace count modest
-            for (yr, sign, intensity), g in enso.groupby(["year", "sign", "intensity"]):
-                # Skip Neutral (opacity level 0 -> invisible)
-                base_opacity = ENSO_OPACITY_LEVEL.get(intensity, 0.0)
-                if base_opacity <= 0.0:
-                    continue
-                final_opacity = max(0.0, min(1.0, base_opacity * global_mult))
-                if final_opacity <= 0.0:
-                    continue
-
-                # Only render if the year exists on the X axis
-                if yr not in x:
-                    continue
-
-                # Color by sign
-                color = ENSO_SIGN_COLOR.get(sign, "rgba(200,200,200,1.0)")
-                # Make a tiny colorscale with the same color
-                colorscale = [[0, color], [1, color]]
-
-                # Build one trace per (year, sign, intensity) with multiple small rectangles (one per month present)
-                # Since Surface can't vary opacity per cell, we keep a single trace with constant opacity,
-                # adding many small 2x2 patches via list extension of add_surface (requires separate traces);
-                # So we actually add one trace PER MONTH here to preserve sharp edges but still batch by (yr,sign,intensity).
-                # To limit trace count, we still keep intensity & sign grouping.
-                months = sorted(g["month"].unique())
-                for m in months:
-                    # Y start/end in anchored day-of-year coords
-                    y_start = y_pos_for_month(m)
-                    # next month (wrap to 1 after 12)
-                    m_next = 1 if m == 12 else m + 1
-                    y_end = y_pos_for_month(m_next)
-
-                    def add_band(y0, y1):
-                        # Build a 2x2 surface that spans z_min..z_max at fixed x=yr and y from y0..y1
-                        x_grid = np.array([[yr, yr], [yr, yr]])
-                        y_grid = np.array([[y0, y0], [y1, y1]])
-                        z_grid = np.array([[z_min, z_max], [z_min, z_max]])
-                        fig.add_trace(
-                            go.Surface(
-                                x=x_grid,
-                                y=y_grid,
-                                z=z_grid,
-                                surfacecolor=np.zeros_like(z_grid),
-                                colorscale=colorscale,
-                                showscale=False,
-                                opacity=final_opacity,
-                                name=f"ENSO {yr} {sign} {intensity}",
-                                hoverinfo='skip'  # no tooltips
-                            )
-                        )
-
-                    # If the band wraps past 365, split it
-                    if y_end > y_start:
-                        add_band(y_start, y_end)
-                    else:
-                        # segment 1: y_start -> 365
-                        add_band(y_start, y.max())
-                        # segment 2: 1 -> y_end
-                        add_band(y.min(), y_end)
-
 
     # Configure x-axis ticks based on year range to avoid overcrowding
     year_span = max(x) - min(x) if len(x) > 0 else 0
