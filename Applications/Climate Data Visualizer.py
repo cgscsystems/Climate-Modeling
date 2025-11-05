@@ -8,13 +8,14 @@ import io
 import json
 import requests
 import re
+import os
 from datetime import datetime
 
 # --- ENSO: live and static file + styling ---
-# Live ENSO data path (preferred)
-ENSO_LIVE_PATH = r"C:\\Coding Projects\\Climate Data Visualization\\Applications\\Support CSV\\ENSO Indices.csv"
+# Live ENSO data path (relative to script location)
+ENSO_LIVE_PATH = None  # Will be determined at runtime
 # Fallback static CSV (date, oni, intensity). Date must be YYYY-MM-01.
-ENSO_STATIC_PATH = r"C:\\Coding Projects\\Climate Data Visualization\\Applications\\Support CSV\\enso monthly phases 2025-08-12.csv"
+ENSO_STATIC_PATH = None  # Will be determined at runtime
 
 # Intensity -> base opacity (before global slider multiplier)
 ENSO_OPACITY_LEVEL = {
@@ -30,22 +31,63 @@ ENSO_SIGN_COLOR = {
     "cold": "rgba( 80, 80,255, 1.0)",   # blue-ish
 }
 
+def find_enso_file():
+    """Find ENSO data file, starting with relative path."""
+    import os
+    from tkinter import filedialog, messagebox
+    import tkinter as tk
+    
+    # Get script directory and construct relative path
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    support_csv_dir = os.path.join(script_dir, "Support CSV")
+    enso_indices_path = os.path.join(support_csv_dir, "ENSO Indices.csv")
+    
+    # Check if live ENSO data exists
+    if os.path.exists(enso_indices_path):
+        return enso_indices_path
+    
+    # If not found, check for old static file
+    static_path = os.path.join(support_csv_dir, "enso monthly phases 2025-08-12.csv")
+    if os.path.exists(static_path):
+        print(f"[ENSO] Warning: Using legacy static ENSO file. Consider running ENSO Indices Compiler for current data.")
+        return static_path
+    
+    # If neither found, offer file picker (but don't require user interaction)
+    try:
+        print(f"[ENSO] ENSO data not found at expected location: {enso_indices_path}")
+        print(f"[ENSO] ENSO functionality will be disabled. Run ENSO Indices Compiler to generate current data.")
+        return None
+    except Exception:
+        # If we can't even show the message (headless mode), just return None
+        return None
+
 def load_enso_data():
     """Load ENSO data, preferring live data over static fallback."""
-    # Try live data first
-    try:
-        return load_live_enso(ENSO_LIVE_PATH)
-    except Exception as e:
-        print(f"[ENSO] Could not load live ENSO data: {e}")
-        print(f"[ENSO] Falling back to static data...")
+    enso_path = find_enso_file()
+    
+    if enso_path is None:
+        print("[ENSO] No ENSO data file found. ENSO functionality disabled.")
+        return None
+    
+    # Determine if this is live or static data based on filename
+    if "ENSO Indices" in os.path.basename(enso_path):
         try:
-            return load_static_enso(ENSO_STATIC_PATH)
-        except Exception as e2:
-            print(f"[ENSO] Could not load static ENSO data: {e2}")
+            return load_live_enso(enso_path)
+        except Exception as e:
+            print(f"[ENSO] Error loading live ENSO data: {e}")
+            return None
+    else:
+        try:
+            return load_static_enso(enso_path)
+        except Exception as e:
+            print(f"[ENSO] Error loading static ENSO data: {e}")
             return None
 
-def load_live_enso(path=ENSO_LIVE_PATH):
+def load_live_enso(path):
     """Load live ENSO data from ENSO Indices Compiler output."""
+    if path is None:
+        raise ValueError("No path provided for live ENSO data")
+        
     df = pd.read_csv(path)
     # Normalize column names
     df.columns = [c.strip().lower() for c in df.columns]
@@ -110,8 +152,11 @@ def oni_to_intensity(oni_value):
     else:
         return "Neutral"
 
-def load_static_enso(path=ENSO_STATIC_PATH):
+def load_static_enso(path):
     """Load static ENSO data (legacy format)."""
+    if path is None:
+        raise ValueError("No path provided for static ENSO data")
+        
     df = pd.read_csv(path)
     # Normalize column names and types
     df.columns = [c.strip().lower() for c in df.columns]

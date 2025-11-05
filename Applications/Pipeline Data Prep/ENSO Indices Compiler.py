@@ -216,17 +216,36 @@ def main_gui():
                 print("🔄 Adding ENSO phase categorization...")
                 merged_df = categorize_enso_phases(merged_df)
             
-            # Prompt for save location
+            # Determine default save directory and filename
+            script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            support_csv_dir = os.path.join(script_dir, "Support CSV")
+            default_filename = "ENSO Indices.csv"
+            
+            # Check if Support CSV directory exists
+            if os.path.exists(support_csv_dir):
+                default_path = os.path.join(support_csv_dir, default_filename)
+                initial_dir = support_csv_dir
+            else:
+                # If Support CSV doesn't exist, ask user to choose directory
+                messagebox.showwarning("Directory Not Found", 
+                    f"Support CSV directory not found at:\n{support_csv_dir}\n\nPlease choose a directory to save the file.")
+                initial_dir = filedialog.askdirectory(title="Choose Directory for ENSO Indices")
+                if not initial_dir:
+                    print("❌ Save cancelled - no directory selected.")
+                    return
+                default_path = os.path.join(initial_dir, default_filename)
+            
+            # Prompt for save location with intelligent default
             save_path = filedialog.asksaveasfilename(
+                initialdir=initial_dir,
+                initialfile=default_filename,
                 defaultextension=".csv",
                 filetypes=[("CSV files", "*.csv")],
                 title="Save ENSO Indices Data"
             )
             
             if not save_path:
-                # Suggest default filename if user didn't specify
-                default_name = f"enso_indices_{datetime.now().strftime('%Y%m%d')}.csv"
-                print(f"❌ Save cancelled. Suggested filename: {default_name}")
+                print("❌ Save cancelled by user.")
                 return
             
             # Save to CSV
