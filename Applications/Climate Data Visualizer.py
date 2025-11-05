@@ -323,30 +323,32 @@ app.layout = html.Div([
         dcc.Store(id='plot-data-store'),
         html.Div([
             html.Div(id='sidebar-container', children=[
+                # Upload Weather Data (Always visible)
+                html.Label("Upload Weather Data:", style={'fontWeight': 'bold'}),
                 dcc.Upload(
                     id='upload-data',
                     children=html.Button('Upload Weather Data (CSV/JSON)', id='upload-button', style={'width': '100%', 'fontSize': 12, 'padding': '4px'}),
                     multiple=False,
-                    style={'marginBottom': '8px'}
+                    style={'marginBottom': '12px'}
                 ),
                 html.Div(id='upload-error', style={'color': 'red', 'fontSize': 12, 'marginBottom': '8px'}),
                 html.Div(id='controls-container'),
             ], style={
-                'width': '220px',
-                'minWidth': '180px',
-                'maxWidth': '260px',
+                'width': '280px',
+                'minWidth': '200px',
+                'maxWidth': '400px',
                 'padding': '8px',
                 'background': '#f8f8f8',
                 'borderRight': '1px solid #ddd',
                 'height': '85vh',
-                'overflowY': 'auto',
-                'display': 'inline-block',
-                'verticalAlign': 'top'
+                'overflowY': 'scroll',
+                'overflowX': 'hidden',
+                'resize': 'horizontal'
             }),
             html.Div([
                 dcc.Graph(id='value-3d-graph', style={'height': '85vh', 'width': '100%'})
-            ], style={'marginLeft': '10px', 'display': 'inline-block', 'width': 'calc(100% - 240px)', 'verticalAlign': 'top'})
-        ], style={'display': 'flex', 'flexDirection': 'row'})
+            ], style={'flex': '1', 'marginLeft': '10px', 'minWidth': '500px'})
+        ], style={'display': 'flex', 'flexDirection': 'row', 'height': '85vh'})
     ])
 ], style={'height': '100vh', 'margin': 0, 'padding': 0, 'fontFamily': 'Segoe UI, Arial, sans-serif'})
 
@@ -456,126 +458,17 @@ def render_controls(contents):
     if plot_data is None or plot_data.empty:
         return None, "No valid data found in file.", None
     return html.Div([
-        html.Label("Dark Mode:"),
-        dcc.RadioItems(
-            id='dark-mode-toggle',
-            options=[
-                {'label': 'Light', 'value': 'light'},
-                {'label': 'Dark', 'value': 'dark'}
-            ],
-            value='light',
-            labelStyle={'display': 'inline-block', 'marginRight': '10px'},
-            style={'marginBottom': '8px'}
-        ),
-
-        html.Label("Month Axis Direction:"),
-        dcc.RadioItems(
-            id='month-axis-toggle',
-            options=[
-                {'label': 'Jan→Dec', 'value': 'normal'},
-                {'label': 'Dec→Jan', 'value': 'reversed'}
-            ],
-            value='normal',
-            labelStyle={'display': 'inline-block', 'marginRight': '10px'},
-            style={'marginBottom': '8px'}
-        ),
-
-        html.Label("Select Variable:"),
+        # Select Variable
+        html.Label("Select Variable:", style={'fontWeight': 'bold'}),
         dcc.Dropdown(
             id='variable-dropdown',
             options=[{'label': var, 'value': var} for var in sorted(plot_data['variable'].unique())],
             value=plot_data['variable'].unique()[0],
-            style={'marginBottom': '8px'}
+            style={'marginBottom': '12px'}
         ),
 
-        html.Label("Plot Style:"),
-        dcc.Dropdown(
-            id='plot-style-dropdown',
-            options=[
-                {'label': 'Surface', 'value': 'surface'},
-                {'label': 'Wireframe', 'value': 'wireframe'},
-                {'label': 'Heatmap', 'value': 'heatmap'},
-                {'label': 'Scatter3D', 'value': 'scatter3d'}
-            ],
-            value='surface',
-            clearable=False,
-            style={'marginBottom': '8px'}
-        ),
-
-        html.Label("Color Palette:"),
-        dcc.Dropdown(
-            id='color-palette-dropdown',
-            options=[
-                {'label': 'Turbo', 'value': 'Turbo'},
-                {'label': 'Viridis', 'value': 'Viridis'},
-                {'label': 'Cividis', 'value': 'Cividis'},
-                {'label': 'Plasma', 'value': 'Plasma'},
-                {'label': 'Inferno', 'value': 'Inferno'},
-                {'label': 'Magma', 'value': 'Magma'},
-                {'label': 'Jet', 'value': 'Jet'},
-                {'label': 'Rainbow', 'value': 'Rainbow'},
-                {'label': 'Portland', 'value': 'Portland'},
-                {'label': 'Earth', 'value': 'Earth'},
-                {'label': 'Electric', 'value': 'Electric'},
-                {'label': 'Hot', 'value': 'Hot'},
-                {'label': 'Picnic', 'value': 'Picnic'},
-                {'label': 'Blackbody', 'value': 'Blackbody'},
-            ],
-            value='Turbo',
-            clearable=False,
-            style={'marginBottom': '8px'}
-        ),
-
-        html.Label("Display Mode:"),
-        dcc.RadioItems(
-            id='display-mode',
-            options=[
-                {'label': 'Raw Values', 'value': 'raw'},
-                {'label': 'Anomaly from Average', 'value': 'anomaly'}
-            ],
-            value='raw',
-            labelStyle={'display': 'inline-block', 'marginRight': '10px'}
-        ),
-
-        html.Label("Surface Display:"),
-        dcc.RadioItems(
-            id='surface-mode',
-            options=[
-                {'label': 'Raw Surface', 'value': 'raw'},
-                {'label': 'Smoothed Surface', 'value': 'smooth'}
-            ],
-            value='raw',
-            labelStyle={'display': 'inline-block', 'marginRight': '10px'}
-        ),
-
-        html.Label("Show Threshold Plane:"),
-        dcc.RadioItems(
-            id='plane-toggle',
-            options=[
-                {'label': 'Yes', 'value': 'show'},
-                {'label': 'No', 'value': 'hide'}
-            ],
-            value='hide',
-            labelStyle={'display': 'inline-block', 'marginRight': '10px'}
-        ),
-        html.Div(id='slider-container'),  # Threshold slider will appear here
-
-        html.Label("Threshold Plane Mode:"),
-        dcc.Dropdown(
-            id='threshold-mode-dropdown',
-            options=[
-                {'label': 'Black Plane', 'value': 'black'},
-                {'label': 'Days Above Threshold', 'value': 'heatmap_above'},
-                {'label': 'Days Below Threshold', 'value': 'heatmap_below'},
-                {'label': 'Penetration Clustering', 'value': 'penetration_clustering'},
-                {'label': 'ENSO Phases', 'value': 'enso_phases'}
-            ],
-            value='black',
-            clearable=False,
-            style={'marginBottom': '8px'}
-        ),
-
-        html.Label("Select Start Month:"),
+        # Select Start Month
+        html.Label("Select Start Month:", style={'fontWeight': 'bold'}),
         dcc.Dropdown(
             id='start-month-dropdown',
             options=[
@@ -604,76 +497,161 @@ def render_controls(contents):
                 {'label': 'December 1', 'value': '12-01'},
                 {'label': 'December 15', 'value': '12-15'}
             ],
-            value='12-01'
+            value='12-01',
+            style={'marginBottom': '12px'}
         ),
 
-        # Axis controls as numeric input fields
-        html.Div([
-            dcc.Input(
-                id='x-aspect-input',
-                type='number',
-                min=1,
-                max=100,
-                step=1,
-                value=6,
-                style={'width': '60px', 'marginRight': '8px'},
-                placeholder='X Axis'
-            ),
-            dcc.Input(
-                id='y-aspect-input',
-                type='number',
-                min=1,
-                max=100,
-                step=1,
-                value=4,
-                style={'width': '60px', 'marginRight': '8px'},
-                placeholder='Y Axis'
-            ),
-            dcc.Input(
-                id='z-aspect-input',
-                type='number',
-                min=1,
-                max=100,
-                step=1,
-                value=2,
-                style={'width': '60px'},
-                placeholder='Z Axis'
-            ),
-        ], style={'marginTop': '10px', 'display': 'flex', 'flexDirection': 'row', 'gap': '4px'}),
-        html.Label("Show ENSO Phases:"),
+        # Month Axis Direction
+        html.Label("Month Axis Direction:", style={'fontWeight': 'bold'}),
         dcc.RadioItems(
-            id='enso-toggle',
+            id='month-axis-toggle',
             options=[
-                {'label': 'Yes', 'value': 'show'},
-                {'label': 'No', 'value': 'hide'}
+                {'label': 'Jan→Dec', 'value': 'normal'},
+                {'label': 'Dec→Jan', 'value': 'reversed'}
             ],
-            value='hide',
-            labelStyle={'display': 'inline-block', 'marginRight': '10px'}
+            value='normal',
+            labelStyle={'display': 'inline-block', 'marginRight': '10px'},
+            style={'marginBottom': '12px'}
         ),
-        html.Label("Plane/ENSO Opacity:"),
+
+        # Axis Controls (X Y Z with Labels)
+        html.Label("3D Axis Ratios:", style={'fontWeight': 'bold'}),
+        html.Div([
+            html.Div([
+                html.Label("X:", style={'fontSize': '10px', 'marginRight': '2px'}),
+                dcc.Input(
+                    id='x-aspect-input',
+                    type='number',
+                    min=1,
+                    max=100,
+                    step=1,
+                    value=6,
+                    style={'width': '50px'},
+                    placeholder='X'
+                ),
+            ], style={'display': 'inline-block', 'marginRight': '8px'}),
+            html.Div([
+                html.Label("Y:", style={'fontSize': '10px', 'marginRight': '2px'}),
+                dcc.Input(
+                    id='y-aspect-input',
+                    type='number',
+                    min=1,
+                    max=100,
+                    step=1,
+                    value=4,
+                    style={'width': '50px'},
+                    placeholder='Y'
+                ),
+            ], style={'display': 'inline-block', 'marginRight': '8px'}),
+            html.Div([
+                html.Label("Z:", style={'fontSize': '10px', 'marginRight': '2px'}),
+                dcc.Input(
+                    id='z-aspect-input',
+                    type='number',
+                    min=1,
+                    max=100,
+                    step=1,
+                    value=2,
+                    style={'width': '50px'},
+                    placeholder='Z'
+                ),
+            ], style={'display': 'inline-block'}),
+        ], style={'marginBottom': '12px'}),
+
+        # Plot Style
+        html.Label("Plot Style:", style={'fontWeight': 'bold'}),
+        dcc.Dropdown(
+            id='plot-style-dropdown',
+            options=[
+                {'label': 'Surface', 'value': 'surface'},
+                {'label': 'Wireframe', 'value': 'wireframe'},
+                {'label': 'Heatmap', 'value': 'heatmap'},
+                {'label': 'Scatter3D', 'value': 'scatter3d'}
+            ],
+            value='surface',
+            clearable=False,
+            style={'marginBottom': '12px'}
+        ),
+
+        # Reverse Color Palette
+        html.Label("Reverse Color Palette:", style={'fontWeight': 'bold'}),
+        dcc.RadioItems(
+            id='reverse-colorscale',
+            options=[
+                {'label': 'Normal', 'value': False},
+                {'label': 'Reversed', 'value': True}
+            ],
+            value=False,
+            labelStyle={'display': 'inline-block', 'marginRight': '10px'},
+            style={'marginBottom': '12px'}
+        ),
+
+        # Color Palette
+        html.Label("Color Palette:", style={'fontWeight': 'bold'}),
+        dcc.Dropdown(
+            id='color-palette-dropdown',
+            options=[
+                {'label': 'Turbo', 'value': 'Turbo'},
+                {'label': 'Viridis', 'value': 'Viridis'},
+                {'label': 'Cividis', 'value': 'Cividis'},
+                {'label': 'Plasma', 'value': 'Plasma'},
+                {'label': 'Inferno', 'value': 'Inferno'},
+                {'label': 'Magma', 'value': 'Magma'},
+                {'label': 'Jet', 'value': 'Jet'},
+                {'label': 'Rainbow', 'value': 'Rainbow'},
+                {'label': 'Portland', 'value': 'Portland'},
+                {'label': 'Earth', 'value': 'Earth'},
+                {'label': 'Electric', 'value': 'Electric'},
+                {'label': 'Hot', 'value': 'Hot'},
+                {'label': 'Picnic', 'value': 'Picnic'},
+                {'label': 'Blackbody', 'value': 'Blackbody'},
+            ],
+            value='Turbo',
+            clearable=False,
+            style={'marginBottom': '12px'}
+        ),
+
+        # Main Surface Opacity
+        html.Label("Main Surface Opacity:", style={'fontWeight': 'bold'}),
         dcc.Slider(
-            id='enso-opacity-slider',
-            min=0.05,
+            id='main-opacity-slider',
+            min=0.1,
             max=1.0,
             step=0.01,
-            value=0.75,
-            marks={0.05: '5%', 0.5: '50%', 1.0: '100%'},
+            value=1.0,
+            marks={0.1: '10%', 0.5: '50%', 1.0: '100%'},
             tooltip={'placement': 'bottom', 'always_visible': False}
         ),
+        html.Div(style={'marginBottom': '12px'}),
 
-        html.Label("Highlight Year Range:"),
-        dcc.RangeSlider(
-            id='year-range-slider',
-            min=int(plot_data['year'].min()),
-            max=int(plot_data['year'].max()),
-            step=1,
-            value=[int(plot_data['year'].min()), int(plot_data['year'].max())],
-            marks=None,
-            allowCross=False,
-            tooltip={'placement': 'bottom', 'always_visible': False}
+        # Display Mode
+        html.Label("Display Mode:", style={'fontWeight': 'bold'}),
+        dcc.RadioItems(
+            id='display-mode',
+            options=[
+                {'label': 'Raw Values', 'value': 'raw'},
+                {'label': 'Anomaly from Average', 'value': 'anomaly'}
+            ],
+            value='raw',
+            labelStyle={'display': 'inline-block', 'marginRight': '10px'},
+            style={'marginBottom': '12px'}
         ),
 
-        html.Label("Outlier Management:"),
+        # Surface Display
+        html.Label("Surface Display:", style={'fontWeight': 'bold'}),
+        dcc.RadioItems(
+            id='surface-mode',
+            options=[
+                {'label': 'Raw Surface', 'value': 'raw'},
+                {'label': 'Smoothed Surface', 'value': 'smooth'}
+            ],
+            value='raw',
+            labelStyle={'display': 'inline-block', 'marginRight': '10px'},
+            style={'marginBottom': '12px'}
+        ),
+
+        # Outlier Management
+        html.Label("Outlier Management:", style={'fontWeight': 'bold'}),
         html.Div([
             dcc.Input(
                 id='outlier-count-input',
@@ -700,7 +678,80 @@ def render_controls(contents):
         html.Div([
             html.P("Reduces impact of extreme events on color scale", 
                    style={'fontSize': '10px', 'color': 'gray', 'margin': '0'})
-        ], style={'marginBottom': '8px'}),
+        ], style={'marginBottom': '12px'}),
+
+        # Show Threshold Plane
+        html.Label("Show Threshold Plane:", style={'fontWeight': 'bold'}),
+        dcc.RadioItems(
+            id='plane-toggle',
+            options=[
+                {'label': 'Yes', 'value': 'show'},
+                {'label': 'No', 'value': 'hide'}
+            ],
+            value='hide',
+            labelStyle={'display': 'inline-block', 'marginRight': '10px'},
+            style={'marginBottom': '12px'}
+        ),
+
+        # Threshold Plane Mode
+        html.Label("Threshold Plane Mode:", style={'fontWeight': 'bold'}),
+        dcc.Dropdown(
+            id='threshold-mode-dropdown',
+            options=[
+                {'label': 'Black Plane', 'value': 'black'},
+                {'label': 'Days Above Threshold', 'value': 'heatmap_above'},
+                {'label': 'Days Below Threshold', 'value': 'heatmap_below'},
+                {'label': 'Penetration Clustering', 'value': 'penetration_clustering'},
+                {'label': 'ENSO Phases', 'value': 'enso_phases'}
+            ],
+            value='black',
+            clearable=False,
+            style={'marginBottom': '12px'}
+        ),
+
+        # Threshold Height Slider (with Label)
+        html.Label("Threshold Height (%):", style={'fontWeight': 'bold'}),
+        html.Div(id='slider-container', style={'marginBottom': '12px'}),
+
+        # Plane/ENSO Opacity
+        html.Label("Plane/ENSO Opacity:", style={'fontWeight': 'bold'}),
+        dcc.Slider(
+            id='enso-opacity-slider',
+            min=0.05,
+            max=1.0,
+            step=0.01,
+            value=0.75,
+            marks={0.05: '5%', 0.5: '50%', 1.0: '100%'},
+            tooltip={'placement': 'bottom', 'always_visible': False}
+        ),
+        html.Div(style={'marginBottom': '12px'}),
+
+        # Dark Mode
+        html.Label("Dark Mode:", style={'fontWeight': 'bold'}),
+        dcc.RadioItems(
+            id='dark-mode-toggle',
+            options=[
+                {'label': 'Light', 'value': 'light'},
+                {'label': 'Dark', 'value': 'dark'}
+            ],
+            value='light',
+            labelStyle={'display': 'inline-block', 'marginRight': '10px'},
+            style={'marginBottom': '12px'}
+        ),
+
+        # Highlight Year Range
+        html.Label("Highlight Year Range:", style={'fontWeight': 'bold'}),
+        dcc.RangeSlider(
+            id='year-range-slider',
+            min=int(plot_data['year'].min()),
+            max=int(plot_data['year'].max()),
+            step=1,
+            value=[int(plot_data['year'].min()), int(plot_data['year'].max())],
+            marks=None,
+            allowCross=False,
+            tooltip={'placement': 'bottom', 'always_visible': False}
+        ),
+
     ]), "", plot_data.to_dict('records') 
 
 # Update the threshold slider callback to remove the label
@@ -858,8 +909,9 @@ def update_control_styling(dark_mode):
     Input('y-aspect-input', 'value'),
     Input('z-aspect-input', 'value'),
     Input('color-palette-dropdown', 'value'),
+    Input('reverse-colorscale', 'value'),
+    Input('main-opacity-slider', 'value'),
     Input('plot-style-dropdown', 'value'),
-    Input('enso-toggle', 'value'),
     Input('enso-opacity-slider', 'value'),
     Input('year-range-slider', 'value'),
     Input('outlier-count-input', 'value'),
@@ -870,8 +922,9 @@ def update_control_styling(dark_mode):
     State('value-3d-graph', 'relayoutData')
 )
 def update_graph(selected_variable, start_month, display_mode, surface_mode, threshold_z, plane_toggle,
-                 threshold_mode, x_aspect, y_aspect, z_aspect, color_palette, plot_style, enso_toggle, enso_opacity, year_range,
-                 outlier_count, outlier_method, plot_data_json, dark_mode, month_axis_direction, relayout_data):
+                 threshold_mode, x_aspect, y_aspect, z_aspect, color_palette, reverse_colorscale, main_opacity,
+                 plot_style, enso_opacity, year_range, outlier_count, outlier_method, plot_data_json, 
+                 dark_mode, month_axis_direction, relayout_data):
     if plot_data_json is None:
         return go.Figure()
     # Avoid unnecessary DataFrame copies
@@ -952,12 +1005,13 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
                 y=y,
                 z=z_data,
                 colorscale=color_palette,
+                reversescale=reverse_colorscale,
                 colorbar=dict(title='Value', x=1.0),
                 customdata=customdata_2d,
                 hovertemplate='<b>Year:</b> %{x}<br><b>Date:</b> %{customdata}<br><b>Value:</b> %{z:.2f}<extra></extra>',
                 name='Surface',
                 showscale=True,
-                opacity=1.0
+                opacity=main_opacity
             )
         )
     elif plot_style == 'wireframe':
@@ -969,12 +1023,13 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
                 y=y,
                 z=z_data,
                 colorscale=color_palette,
+                reversescale=reverse_colorscale,
                 colorbar=dict(title='Value'),
                 customdata=customdata_2d,
                 hovertemplate='<b>Year:</b> %{x}<br><b>Date:</b> %{customdata}<br><b>Value:</b> %{z:.2f}<extra></extra>',
                 name='Wireframe',
                 showscale=False,
-                opacity=0.3,
+                opacity=main_opacity * 0.3,
                 contours = {
                     "z": {"show": True, "start": np.nanmin(z_data), "end": np.nanmax(z_data), "size": (np.nanmax(z_data)-np.nanmin(z_data))/15, "color":"black"}
                 }
@@ -989,10 +1044,12 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
                 y=y,
                 z=z_data,
                 colorscale=color_palette,
+                reversescale=reverse_colorscale,
                 colorbar=dict(title='Value'),
                 customdata=customdata_2d,
                 hovertemplate='<b>Year:</b> %{x}<br><b>Date:</b> %{customdata}<br><b>Value:</b> %{z:.2f}<extra></extra>',
-                name='Heatmap'
+                name='Heatmap',
+                opacity=main_opacity
             )
         )
     elif plot_style == 'scatter3d':
@@ -1009,7 +1066,9 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
                     size=2,
                     color=z_data.flatten(),
                     colorscale=color_palette,
-                    colorbar=dict(title='Value')
+                    reversescale=reverse_colorscale,
+                    colorbar=dict(title='Value'),
+                    opacity=main_opacity
                 ),
                 customdata=customdata_1d,
                 hovertemplate='<b>Year:</b> %{x}<br><b>Date:</b> %{customdata}<br><b>Value:</b> %{z:.2f}<extra></extra>',
@@ -1115,6 +1174,7 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
                     z=z_plane,
                     surfacecolor=band_matrix,
                     colorscale=color_palette,
+                    reversescale=reverse_colorscale,
                     colorbar=dict(title='Days Above Threshold (per Year)', x=1.13),
                     showscale=True,
                     opacity=plane_opacity,
@@ -1144,6 +1204,7 @@ def update_graph(selected_variable, start_month, display_mode, surface_mode, thr
                     z=z_plane,
                     surfacecolor=band_matrix,
                     colorscale=color_palette,
+                    reversescale=reverse_colorscale,
                     colorbar=dict(title='Days Below Threshold (per Year)', x=1.13),
                     showscale=True,
                     opacity=plane_opacity,
