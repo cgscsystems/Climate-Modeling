@@ -1,0 +1,21 @@
+# Core Data Processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Web Scraping & API Requests
+requests>=2.28.0
+beautifulsoup4>=4.11.0
+
+# Scientific Computing
+scipy>=1.10.0
+
+# Interactive Visualization & Web Framework
+plotly>=5.15.0
+dash>=2.10.0
+
+# GUI Framework (usually included with Python)
+# tkinter - included with Python standard library
+
+# Optional: For enhanced data processing
+# openpyxl>=3.1.0  # Excel file support
+# lxml>=4.9.0      # Enhanced XML/HTML parsing

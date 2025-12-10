@@ -1,6 +1,6 @@
 # Climate Modeling AI Assistant Instructions
 
-<!-- Last Updated: 2025-12-10 18:13:55
+<!-- Last Updated: 2025-12-10 18:22:50
 
 ## Project Overview
 This is a **climate data modeling workspace** focused on weather station data ETL, 3D visualization, and ENSO correlation analysis. The project processes Environment Canada (EC) and NOAA weather station data through standardized pipelines and displays temporal patterns using Plotly/Dash.
@@ -66,10 +66,37 @@ groupwise_aggregation() → calculate_columns()
   - Uses standard `reference-data/` naming convention for broader file type support
 
 ## Dependencies & Environment
+
+### Quick Setup (Recommended)
+```bash
+# Clone the repository
+git clone https://github.com/cgscsystems/Climate-Modeling.git
+cd Climate-Modeling
+
+# Create and activate virtual environment
+python -m venv climate-env
+# Windows:
+climate-env\Scripts\activate
+# macOS/Linux:
+source climate-env/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Launch main application
+python "Applications/Climate Data Visualizer.py"
+```
+
+### Dependencies
 - **Core libraries**: `pandas`, `plotly`, `dash`, `requests`, `beautifulsoup4`, `tkinter`
 - **Scientific**: `numpy`, `scipy` (for gaussian filtering)
-- **Development**: No formal requirements.txt - install as needed
+- **Package management**: See `requirements.txt` for exact versions and optional packages
 - **Launch pattern**: Dash apps auto-open browser via `webbrowser.open_new("http://127.0.0.1:8050/")`
+
+### Virtual Environment Benefits
+- **Isolation**: Prevents conflicts with system packages
+- **Reproducibility**: Ensures consistent dependency versions across systems
+- **Clean setup**: Easy installation and removal without affecting system Python
 
 ## Data Source URLs
 - **Environment Canada**: `https://dd.weather.gc.ca/today/climate/observations/daily/csv/{province_code}/` (Updated Nov 2025)
