@@ -1,6 +1,6 @@
 # Climate Modeling AI Assistant Instructions
 
-<!-- Last Updated: 2025-12-10 18:00:10
+<!-- Last Updated: 2025-12-10 18:13:55
 
 ## Project Overview
 This is a **climate data modeling workspace** focused on weather station data ETL, 3D visualization, and ENSO correlation analysis. The project processes Environment Canada (EC) and NOAA weather station data through standardized pipelines and displays temporal patterns using Plotly/Dash.
@@ -56,10 +56,14 @@ groupwise_aggregation() → calculate_columns()
 
 ## Critical File Locations
 - **Station data**: `climate_station_list.csv` (master registry)
-- **ENSO phases**: `Support CSV/enso monthly phases 2025-08-12.csv`
+- **ENSO phases**: `reference-data/enso monthly phases 2025-08-12.csv`
 - **Province mapping**: `PROVINCE_CODE_MAP` in Applications/Pipeline Data Prep/EC Data Compiler (13 provinces/territories)
 - **Output directory**: Always prompt user for save location with `filedialog.asksaveasfilename()`
-- **NOAA station format**: `Applications/Support CSV/noaa_stations_ec_format.csv`
+- **NOAA station format**: `Applications/reference-data/noaa_stations_ec_format.csv`
+- **Support Files Standard**: All files directly referenced by code should be placed in `Applications/reference-data/` directory
+  - Station registries, ENSO data, configuration files, reference datasets
+  - This directory is whitelisted in .gitignore to ensure availability across system setups
+  - Uses standard `reference-data/` naming convention for broader file type support
 
 ## Dependencies & Environment
 - **Core libraries**: `pandas`, `plotly`, `dash`, `requests`, `beautifulsoup4`, `tkinter`

@@ -551,7 +551,7 @@ def main_gui():
     root.title("NOAA Climate Data Compiler")
     
     # Load station data - try default path first, then file picker fallback
-    station_file = os.path.join("..", "Support CSV", "noaa_stations_ec_format.csv")
+    station_file = os.path.join("..", "reference-data", "noaa_stations_ec_format.csv")
     
     if not os.path.exists(station_file):
         print(f"Station file not found at default location: {station_file}")

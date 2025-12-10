@@ -74,7 +74,10 @@ Visualizations/*
 # But INCLUDE specific files we want to track:
 # Python files are included by default (not excluded above)
 # Markdown files are included by default
-# Support CSV directory files - we'll add these explicitly
+
+# Support/Config directory - whitelist ALL files
+!Applications/reference-data/
+!Applications/reference-data/*
 
 # Include specific required files from GitHub version
 !climate_station_list.csv

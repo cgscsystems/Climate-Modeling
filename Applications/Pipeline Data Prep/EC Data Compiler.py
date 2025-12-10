@@ -423,7 +423,7 @@ def main_gui():
             response = requests.get(url, stream=True)
             response.raise_for_status()
             
-            # Save to the Support CSV directory
+            # Save to the reference-data directory
             with open(station_file_path, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
@@ -443,10 +443,10 @@ def main_gui():
             messagebox.showerror("Update Error", f"Failed to update station list: {e}")
 
     def load_default_station_file():
-        """Load the default station list from Support CSV directory"""
+        """Load the default station list from reference-data directory"""
         try:
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            station_file_path = os.path.join(script_dir, "..", "Support CSV", "EC_climate_station_list.csv")
+            station_file_path = os.path.join(script_dir, "..", "reference-data", "EC_climate_station_list.csv")
             station_file_path = os.path.normpath(station_file_path)
             
             if not os.path.exists(station_file_path):

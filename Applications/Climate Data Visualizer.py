@@ -39,7 +39,7 @@ def find_enso_file():
     
     # Get script directory and construct relative path
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    support_csv_dir = os.path.join(script_dir, "Support CSV")
+    support_csv_dir = os.path.join(script_dir, "reference-data")
     enso_indices_path = os.path.join(support_csv_dir, "ENSO Indices.csv")
     
     # Check if live ENSO data exists
