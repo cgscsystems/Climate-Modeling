@@ -1,6 +1,6 @@
 # Climate Modeling AI Assistant Instructions
 
-<!-- Last Updated: 2025-12-10 17:32:56
+<!-- Last Updated: 2025-12-10 18:00:10
 
 ## Project Overview
 This is a **climate data modeling workspace** focused on weather station data ETL, 3D visualization, and ENSO correlation analysis. The project processes Environment Canada (EC) and NOAA weather station data through standardized pipelines and displays temporal patterns using Plotly/Dash.
