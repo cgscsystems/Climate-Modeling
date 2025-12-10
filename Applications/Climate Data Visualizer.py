@@ -95,8 +95,10 @@ def load_live_enso(path):
     # Convert date and extract components
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df = df.dropna(subset=["date"])
-    df["year"] = df["date"].dt.year.astype(int)
-    df["month"] = df["date"].dt.month.astype(int)
+    # Ensure datetime column is properly typed for accessor
+    date_series = pd.to_datetime(df["date"])
+    df["year"] = date_series.dt.year.astype(int)
+    df["month"] = date_series.dt.month.astype(int)
     
     # Use ONI anomaly if available, otherwise fall back to ONI total
     if "oni_anomaly" in df.columns:
@@ -166,8 +168,10 @@ def load_static_enso(path):
     df["oni"] = pd.to_numeric(df["oni"], errors="coerce")
     df["intensity"] = df["intensity"].astype(str).str.strip().str.title()
     # derive year, month, sign
-    df["year"] = df["date"].dt.year.astype(int)
-    df["month"] = df["date"].dt.month.astype(int)
+    # Ensure datetime column is properly typed for accessor
+    date_series = pd.to_datetime(df["date"])
+    df["year"] = date_series.dt.year.astype(int)
+    df["month"] = date_series.dt.month.astype(int)
     df["sign"] = np.where(df["oni"] >= 0, "warm", "cold")
     # anything non-matching -> Neutral
     df.loc[~df["intensity"].isin(ENSO_OPACITY_LEVEL.keys()), "intensity"] = "Neutral"
@@ -434,7 +438,9 @@ def parse_contents(contents):
         df = df.dropna(axis=1, how='all')
         df['year'] = df['date'].apply(lambda d: d.year + 1 if d.month == 12 else d.year).astype('Int64')
         df = df[df['year'].notna()]
-        df['md'] = df['date'].dt.strftime('%m-%d')
+        # Ensure datetime column is properly typed for accessor
+        date_series = pd.to_datetime(df['date'])
+        df['md'] = date_series.dt.strftime('%m-%d')
         df_melted = df.melt(id_vars=['date', 'year', 'md'], var_name='variable', value_name='value')
         df_melted.sort_values(by=['variable', 'date'], inplace=True)
         plot_data = df_melted.dropna(subset=['value'])[['variable', 'year', 'md', 'date', 'value']]

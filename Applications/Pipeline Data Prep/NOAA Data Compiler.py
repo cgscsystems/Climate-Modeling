@@ -374,8 +374,10 @@ def calculate_columns(input_csv):
         return df
     
     # Create month-day string for climatology calculations
-    df['MM-DD'] = df['date'].dt.strftime('%m-%d')
-    df['Year'] = df['date'].dt.year
+    # Ensure datetime column is properly typed for accessor
+    date_series = pd.to_datetime(df['date'])
+    df['MM-DD'] = date_series.dt.strftime('%m-%d')
+    df['Year'] = date_series.dt.year
     
     print(f"    Calculating climatology and anomalies for {len(value_cols)} variables...")
     
@@ -456,7 +458,9 @@ def merge_and_transform_noaa_files(file_info_list):
             df = pd.read_csv(info['file_path'])
             df['DATE'] = pd.to_datetime(df['DATE'], errors='coerce')
             df = df.dropna(subset=['DATE'])
-            df = df[(df['DATE'].dt.year >= info['start_year']) & (df['DATE'].dt.year <= info['end_year'])]
+            # Ensure datetime column is properly typed for accessor
+            date_series = pd.to_datetime(df['DATE'])
+            df = df[(date_series.dt.year >= info['start_year']) & (date_series.dt.year <= info['end_year'])]
             
             if df.empty:
                 print(f"    No data in date range for {station_id}")

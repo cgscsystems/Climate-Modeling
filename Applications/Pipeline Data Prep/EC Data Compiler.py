@@ -235,8 +235,10 @@ def calculate_columns(input_csv):
     df = df.dropna(subset=['date'])
     numeric_cols = df.select_dtypes(include='number').columns.tolist()
     value_cols = [col for col in numeric_cols if col not in ['year', 'day_of_year']]
-    df['MM-DD'] = df['date'].dt.strftime('%m-%d')
-    df['Year'] = df['date'].dt.year
+    # Ensure datetime column is properly typed for accessor
+    date_series = pd.to_datetime(df['date'])
+    df['MM-DD'] = date_series.dt.strftime('%m-%d')
+    df['Year'] = date_series.dt.year
 
     for col in value_cols:
         climatology = df.groupby('MM-DD')[col].mean()
