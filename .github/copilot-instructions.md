@@ -151,6 +151,28 @@ When API breaks are detected:
 - **Nov 2025**: EC filename format changed to include `_P1D.csv` suffix
 - **[Future changes will be documented here]**
 
+### Official Change Notification Channels
+**Environment Canada (MSC Datamart):**
+- **Announcement List**: [dd_info mailing list](https://comm.collab.science.gc.ca/mailman3/postorius/lists/dd_info/) - Subscribe for official notifications of changes
+- **AMQP Real-Time Feed**: [MSC Datamart AMQP](https://eccc-msc.github.io/open-data/msc-datamart/amqp_en/) - Real-time data availability notifications
+- **Test Server**: [DD-Alpha](http://dd.alpha.weather.gc.ca/) - Preview new data formats before production deployment
+- **Documentation**: [MSC Datamart Documentation](https://eccc-msc.github.io/open-data/msc-datamart/readme_en/)
+- **Support**: [MSC Contact Form](https://www.weather.gc.ca/mainmenu/contact_us_e.html) - Best effort support during business hours
+
+**NOAA (NCEI):**
+- **API Documentation**: [NCEI Access Data Service API](https://www.ncei.noaa.gov/support/access-data-service-api-user-documentation)
+- **News Feed**: [NCEI News RSS](https://www.ncei.noaa.gov/news.xml)
+- **Twitter**: [@NOAANCEI](https://twitter.com/NOAANCEI) - Official updates
+- **Email Support**: [Contact NCEI](https://www.ncei.noaa.gov/contact) - Technical support
+- **API Endpoint**: `https://www.ncei.noaa.gov/access/services/data/v1` - Check for API version changes
+
+**Proactive Monitoring Approach:**
+1. Subscribe to dd_info mailing list for EC changes
+2. Monitor NCEI News RSS feed for NOAA updates
+3. Follow @NOAANCEI on Twitter for real-time announcements
+4. Check DD-Alpha monthly for upcoming EC format changes
+5. Test API endpoints weekly with automated health checks
+
 ## Development Roadmap
 
 ### Active Development: Fork 1 - ENSO Indices Integration
@@ -225,10 +247,19 @@ This project includes automated documentation maintenance via git pre-commit hoo
 - **`Weather-Modeling.code-workspace`**: Metadata about recent file changes
 - **`.ai-conversations/conversation-summary.md`**: Project status and recent changes context
 
+### Active Hooks
+The project includes **two pre-commit hooks** for cross-platform compatibility:
+- **`.git/hooks/pre-commit`**: Bash/sh version (Linux, macOS, Git Bash on Windows)
+- **`.git/hooks/pre-commit.ps1`**: PowerShell version (native Windows PowerShell)
+
+Git will automatically execute the appropriate hook based on your environment.
+
 ### Setup
-```powershell
-# Run once to enable (already configured)
-.\setup-auto-maintenance.ps1
+Hooks are already in place and executable. On first clone:
+```bash
+# Linux/macOS - hooks should work automatically
+# Windows - may need execution policy adjustment:
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
 ### Manual Override
@@ -237,7 +268,14 @@ To commit without auto-maintenance (if needed):
 git commit --no-verify -m "your message"
 ```
 
-## Visualizations Directory
+### Hook Functionality
+Each commit automatically:
+1. Updates timestamp in this file's header comment
+2. Adds list of changed files to workspace metadata
+3. Updates conversation summary with file counts and last commit info
+4. Stages updated files for inclusion in commit
+
+## Development Roadmap
 - **Current samples**: 4 visualization files (MP4/BMP) are tracked as examples
 - **Future files**: New files in `Visualizations/` are automatically ignored
 - **Manual inclusion**: Use `git add -f Visualizations/filename` to explicitly track new samples

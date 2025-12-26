@@ -10,7 +10,7 @@ import unicodedata
 import tkinter as tk
 
 def scrape_data_set():
-    BASE_URL = "https://dd.weather.gc.ca/climate/observations/daily/csv/ON/"
+    BASE_URL = "https://dd.weather.gc.ca/today/climate/observations/daily/csv/ON/"
     STATION_RANGES = {
         '6105978': (2000, 2025),
         '7032685': (2018, 2025)

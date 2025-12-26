@@ -18,7 +18,7 @@ def ask_save_path(default_name="_______Complete_Weather.csv"):
     return save_path
 
 # Source config
-BASE_URL = "https://dd.weather.gc.ca/climate/observations/daily/csv/ON/" #AB/BC/MB/NB/NL/NS/NU/ON/PE/QC/SK/YT
+BASE_URL = "https://dd.weather.gc.ca/today/climate/observations/daily/csv/ON/" #AB/BC/MB/NB/NL/NS/NU/ON/PE/QC/SK/YT
 STATION_RANGES = { #Ottawa
     '6105887': (1872, 1935),
     '6105910': (1954, 1954),
